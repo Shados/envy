@@ -1,0 +1,4 @@
+[flake8]
+per-file-ignores =
+    # E265: spurious wrt. nix-shell shebang
+    envy-pins:E265

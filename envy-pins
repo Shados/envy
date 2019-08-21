@@ -1,0 +1,471 @@
+#!/usr/bin/env nix-shell
+#!nix-shell envy-pins.nix -i python3
+import argparse
+import asyncio
+import json
+import logging
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+import giturlparse
+
+FRAGMENT_GH_USER = r"[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}"
+FRAGMENT_GH_REPO = r"[\w\d_.-]{1,100}"
+PAT_SRC_PLUG_SHORT = re.compile(
+    r"^%s/(%s)$" % (FRAGMENT_GH_USER, FRAGMENT_GH_REPO), flags=re.IGNORECASE
+)
+
+# Command-line argument parsing {{{
+LOGGING_LEVELS = {
+    "critical": logging.CRITICAL,
+    "error": logging.ERROR,
+    "warning": logging.WARNING,
+    "info": logging.INFO,
+    "debug": logging.DEBUG,
+}
+aparser = argparse.ArgumentParser(
+    description="Vim plugin source prefetching & pinning tool"
+)
+aparser.add_argument(
+    "output",
+    nargs="?",
+    default="pins",
+    help=(
+        "The directory to write out the JSON pin files for, one per prefetched "
+        "source. The directory will be created if it does not already exist."
+    ),
+)
+aparser.add_argument(
+    "-c",
+    "--nix-config-file-path",
+    nargs="?",
+    help=(
+        "The path to a Nix file defining a module that provides configuration "
+        "for the neovim module. "
+        "Will have nixpkgs made available as the 'pkgs' module argument. "
+        "Not required if you are using -m, -n, or -s, but will be merged"
+        "with them if given."
+    ),
+)
+aparser.add_argument(
+    "-m",
+    "--source-home-manager",
+    action="store_true",
+    help="Merge neovim module configuration provided by home-manager.",
+)
+aparser.add_argument(
+    "-n",
+    "--source-nixos",
+    action="store_true",
+    help="Merge neovim module configuration provided by NixOS.",
+)
+aparser.add_argument(
+    "-s",
+    "--source-nixos-hm-submodule",
+    action="store_true",
+    help=(
+        "Merge neovim module configuration provided by a NixOS submodule for "
+        "home-manager."
+    ),
+)
+aparser.add_argument(
+    "-j",
+    "--json-source-map",
+    nargs="?",
+    help=(
+        "The path to a JSON file mapping plugin names to source information. "
+        "Can be used in place of the --source and -c options; they will be "
+        "ignored in favour of it. "
+        "Please note: This argument is not compatible with any flags that "
+        "operate based on the 'required' set of plugins, or on plugin dependency "
+        "relations, as the JSON file does not contain that information."
+    ),
+)
+aparser.add_argument("-l", "--logging-level", help="Logging level, defaults to info")
+VISIBLE_SUBCOMMANDS = ["update-all", "update", "clean"]
+subparsers = aparser.add_subparsers(
+    dest="subparser_name",
+    help="subcommand (defaults to update-all)",
+    metavar="{%s}" % ",".join(VISIBLE_SUBCOMMANDS),
+)
+update_all = subparsers.add_parser(
+    "update-all", help="Update or install pins for all provided sources."
+)
+update_all.add_argument(
+    "-i",
+    "--install-only",
+    action="store_true",
+    help=(
+        "Only create new pins for sources without a pin, do not update existing "
+        "pins."
+    ),
+)
+update_all.add_argument(
+    "-r",
+    "--required-only",
+    action="store_true",
+    help=(
+        "Only update/install the pins that are required by the current module "
+        "configuration(s) instead of all provided sources; this is ignored if "
+        "-j is used."
+    ),
+)
+update = subparsers.add_parser(
+    "update",
+    help="Update or install specified pins selected from all provided sources.",
+)
+update.add_argument(
+    "-i",
+    "--install-only",
+    action="store_true",
+    help=(
+        "Only create new pins for sources without a pin, do not update existing "
+        "pins."
+    ),
+)
+update.add_argument(
+    "-d",
+    "--include-dependencies",
+    action="store_true",
+    help=(
+        "Also update/install the full dependency closure of the specified pins, "
+        "selected from all provided sources. Includes both strict and 'soft' "
+        "dependencies, if they are in the provided sources."
+    ),
+)
+update.add_argument(
+    "sources_to_update",
+    nargs="+",
+    help=(
+        "The subset of sources to install/update pins for, selected from the "
+        "set of all provided sources."
+    ),
+)
+clean = subparsers.add_parser(
+    "clean",
+    help=(
+        "Remove any pin files that do not have a matching source present in "
+        "any of the provided sources."
+    ),
+)
+clean.add_argument(
+    "-r",
+    "--required-only",
+    action="store_true",
+    help=(
+        "Only keep the pins that are required by the current module "
+        "configuration(s) instead of keeping pins for all provided sources; "
+        "this is ignored if -j is used."
+    ),
+)
+# }}}
+
+
+def main(args):
+    out_dir, parsed_sources, base_nix_cmd, filter_dir, required_sources = process_args(
+        cli_args
+    )
+
+    # Select and perform subcommand
+    if "subparser_name" not in args:
+        # Default, same as update-all, but we can't take any of its specific
+        # flags
+        update_all(out_dir, parsed_sources)
+    elif args.subparser_name == "update-all":
+        filtered_sources = filter_sources(parsed_sources, filter_dir, required_sources)
+        update_all(out_dir, filtered_sources)
+    elif args.subparser_name == "update":
+        selections = args.sources_to_update
+        if args.include_dependencies:
+            deps = get_deps(selections, base_nix_cmd)
+            selections.extend(deps)
+        selected_sources = select_sources(parsed_sources, selections)
+        filtered_sources = filter_sources(
+            selected_sources, filter_dir, required_sources
+        )
+        update_all(out_dir, filtered_sources)
+    elif args.subparser_name == "clean":
+        if required_sources:
+            preserve_sources = required_sources
+        else:
+            preserve_sources = dict(parsed_sources).keys()
+        clean_pins(preserve_sources, out_dir)
+    else:
+        # TODO error? Shouldn't be reachable
+        None
+
+
+def process_args(cli_args):
+    out_dir = Path(cli_args.output)
+
+    nvim_conf_file = cli_args.nix_config_file_path
+    if nvim_conf_file and (
+        not nvim_conf_file.startswith("/")
+        and not nvim_conf_file.startswith("./")
+        and not nvim_conf_file.startswith("../")
+    ):
+        nvim_conf_file = "./" + nvim_conf_file
+
+    if cli_args.json_source_map:
+        json_file = cli_args.json_source_map
+    else:
+        # Use the Nix module to build JSON file with the source map
+        script_dir = os.path.realpath(sys.path[0])
+        module_path = "%s/%s" % (script_dir, "loaded-module.nix")
+        base_nix_cmd = ["nix-build", module_path, "--no-out-link"]
+        if nvim_conf_file:
+            base_nix_cmd.extend(["--arg", "nvimConfigPath", nvim_conf_file])
+        if cli_args.source_home_manager:
+            base_nix_cmd.extend(["--arg", "withHMConfig", "true"])
+        if cli_args.source_nixos:
+            base_nix_cmd.extend(["--arg", "withNixosConfig", "true"])
+        if cli_args.source_nixos_hm_submodule:
+            base_nix_cmd.extend(["--arg", "withNixosHMConfig", "true"])
+
+        sources_nix_cmd = base_nix_cmd + ["-A", "pluginSourcesJson"]
+        json_file = subprocess.run(
+            sources_nix_cmd, capture_output=True, check=True
+        ).stdout.strip()
+
+    with open(json_file) as plugin_sources_file:
+        vim_plugin_sources = json.load(plugin_sources_file)
+
+    print("Defined plugin source specifications:")
+    print(json.dumps(vim_plugin_sources, indent=2, sort_keys=True))
+
+    parsed_sources = (
+        parse_source(plug_name, src_str)
+        for plug_name, src_str in vim_plugin_sources.items()
+    )
+    parsed_sources = (s for s in parsed_sources if s is not None)
+
+    if "install_only" in cli_args and cli_args.install_only:
+        filter_dir = out_dir
+    else:
+        filter_dir = None
+    if "required_only" in cli_args and cli_args.required_only:
+        required_sources = get_required_sources(base_nix_cmd)
+    else:
+        required_sources = None
+
+    return out_dir, parsed_sources, base_nix_cmd, filter_dir, required_sources
+
+
+def update_all(out_dir, parsed_sources):
+    loop = asyncio.get_event_loop()
+    source_pins = loop.run_until_complete(prefetch_all(parsed_sources))
+
+    os.makedirs(out_dir, exist_ok=True)
+    for pin in source_pins.values():
+        pin_file = pin_filename(pin["plugName"])
+        with open("%s/%s" % (out_dir, pin_file), "w") as outf:
+            json.dump(pin, outf, indent=2, sort_keys=True)
+    print("Wrote %d pins to %s" % (len(source_pins), str(out_dir)))
+
+
+# always returns None or (plug_name, plug_src) tuple
+def parse_source(plug_name, plug_src):
+    src_str = plug_src["source"].strip()
+
+    m = PAT_SRC_PLUG_SHORT.match(src_str)
+    if m:
+        # It's a vim-plug short name... probably
+        gh_url = "https://github.com/%s.git" % (src_str,)
+        plug_src["type"] = "github"
+        plug_src["url"] = gh_url
+    else:
+        try:
+            url = giturlparse.parse(src_str)
+            # It's a validly-formed Git URL if this method succeeds
+            plug_src["type"] = "git"
+            plug_src["url"] = url
+        except giturlparse.parser.ParserError:
+            # TODO log error
+            return None
+    return (plug_name, plug_src)
+    # TODO handle http source_type for fetchurl?
+
+
+def get_required_sources(base_nix_cmd):
+    required_plugins_cmd = base_nix_cmd + ["-A", "requiredPluginsJson"]
+    json_file = subprocess.run(
+        required_plugins_cmd, capture_output=True, check=True
+    ).stdout.strip()
+    with open(json_file) as f:
+        required_plugins = json.load(f)
+    return required_plugins
+
+
+def filter_sources(parsed_sources, filter_dir, required_sources):
+    filtered_sources = dict(parsed_sources)
+    if filter_dir:
+        # Filter to remove any sources that already have pins in this directory
+        try:
+            pin_list = os.listdir(filter_dir)
+            filtered_sources = dict(
+                {
+                    name: src
+                    for name, src in filtered_sources.items()
+                    if pin_filename(name) not in pin_list
+                }
+            )
+        except Exception:
+            None
+    if required_sources:
+        # Filter to remove any sources that aren't in the required_sources list
+        filtered_sources = dict(
+            {
+                name: src
+                for name, src in filtered_sources.items()
+                if name in required_sources
+            }
+        )
+    return filtered_sources.items()
+
+
+def get_deps(plugin_names, base_nix_cmd):
+    dep_index_cmd = base_nix_cmd + ["-A", "depIndexJson"]
+    json_file = subprocess.run(
+        dep_index_cmd, capture_output=True, check=True
+    ).stdout.strip()
+    with open(json_file) as f:
+        dep_index = json.load(f)
+    deps = set()
+    for name in plugin_names:
+        deps = deps.union(dep_index[name]["after"])
+    return deps
+
+
+def select_sources(parsed_sources, selections):
+    return ((name, src) for name, src in parsed_sources if name in selections)
+
+
+async def prefetch_all(srclist):
+    workers = map(nix_prefetch_src, srclist)
+    source_pins = {}
+    for worker in asyncio.as_completed(workers):
+        (plug_name, prefetched_json) = await (worker)
+        if plug_name:
+            print("- Successfully fetched %s" % prefetched_json["plugName"])
+            source_pins[plug_name] = prefetched_json
+    return source_pins
+
+
+async def nix_prefetch_src(src):
+    plug_name, plug_src = src
+    cmd = ["nix-prefetch-git"]
+    if "commit" in plug_src:
+        cmd.extend(["--rev", plug_src["commit"]])
+    elif "tag" in plug_src:
+        cmd.extend(["--rev", plug_src["tag"]])
+    elif "branch" in plug_src:
+        cmd.extend(["--branch-name", plug_src["branch"]])
+    if "leaveDotGit" in plug_src:
+        cmd.append("--leave-dotGit")
+    if "fetchSubmodules" in plug_src:
+        cmd.append("--fetch-submodules")
+    if "deepClone" not in plug_src:
+        cmd.append("--no-deepClone")
+    cmd.extend(["--url", plug_src["url"]])
+
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdin=asyncio.subprocess.PIPE,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+
+    stdout, stderr = await proc.communicate()
+    if proc.returncode == 0:
+        ret = json.loads(stdout.decode())
+        ret["plugName"] = plug_name
+        ret["fetchType"] = plug_src["type"]
+        if "branch" in plug_src:
+            ret["version"] = "%s-%s" % (plug_src["branch"], ret["date"][:10])
+        elif "tag" in plug_src:
+            ret["version"] = plug_src["tag"]
+        else:
+            ret["version"] = "unstable-%s" % (ret["date"][:10],)
+        return (plug_name, ret)
+    else:
+        print("- Failed %s, with:" % (plug_name))
+        print(stderr.decode())
+        return None
+
+
+def pin_filename(plug_name):
+    # systemd-escape style escaping
+    escaped_name = (
+        plug_name.replace("-", "\\x2d").replace("/", "-").replace(" ", "\\x20")
+    )
+    return "%s.json" % (escaped_name,)
+
+
+def clean_pins(preserve_sources, out_dir):
+    pin_list = set(os.listdir(out_dir))
+    preserve_pins = set(pin_filename(name) for name in preserve_sources)
+    remove_pins = pin_list - preserve_pins
+    for pin_file in remove_pins:
+        file_path = "%s/%s" % (out_dir, pin_file)
+        print("Removing pin file '%s'" % (file_path))
+        os.remove(file_path)
+
+
+if __name__ == "__main__":
+    # Parse CLI arguments
+    cli_args = aparser.parse_args()
+
+    if all(
+        [
+            not cli_args.nix_config_file_path,
+            not cli_args.source_home_manager,
+            not cli_args.source_nixos,
+            not cli_args.source_nixos_hm_submodule,
+            not cli_args.json_source_map,
+        ]
+    ):
+        aparser.error("You must specify at least one of -c, -m, -n, or -s")
+
+    if cli_args.source_home_manager and "HM_NVIM_ENABLED" not in os.environ:
+        aparser.error(
+            "-m has been specified, but the current environment has not been "
+            "built using home-manager with the neovim module enabled"
+        )
+    if cli_args.source_nixos and "NIXOS_NVIM_ENABLED" not in os.environ:
+        aparser.error(
+            "-n has been specified, but the current environment has not been "
+            "built using nixos with the neovim module enabled"
+        )
+    if cli_args.source_nixos_hm_submodule and "NIXOS_HM_NVIM_ENABLED" not in os.environ:
+        aparser.error(
+            "-m has been specified, but the current environment has not been "
+            "built using home-manager embedded in nixos with the neovim module "
+            "enabled"
+        )
+
+    if cli_args.json_source_map and any(
+        [
+            "include_dependencies" in cli_args and cli_args.include_dependencies,
+            "required_only" in cli_args and cli_args.required_only,
+        ]
+    ):
+        aparser.error(
+            "The --include_dependencies and --required-only flags are not "
+            "compatible with providing source information using -j"
+        )
+
+    # Setup default logger
+    # TODO actually use the logging, heh
+    logging_level = LOGGING_LEVELS.get(cli_args.logging_level, logging.INFO)
+    logging.basicConfig(
+        level=logging_level,
+        format="[%(filename)s:%(lineno)s:%(funcName)20s()] %(asctime)s %(levelname)s: %(message)s",  # noqa: E501
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    main(cli_args)
+
+# vim: set ft=python :
