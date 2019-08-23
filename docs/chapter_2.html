@@ -1,0 +1,401 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Module Configuration - Envy Documentation</title>
+        
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body class="light">
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            document.body.className = theme;
+            document.querySelector('html').className = theme + ' js';
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> Setup</a></li><li><a href="chapter_2.html" class="active"><strong aria-hidden="true">2.</strong> Module Configuration</a></li><li><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Packaging Plugins</a></li><li><a href="chapter_4.html"><strong aria-hidden="true">4.</strong> Advanced Usage</a></li><li class="spacer"></li><li class="affix"><a href="options.html">A. Configuration Options</a></li><li class="affix"><a href="tools.html">B. Tools</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div id="menu-bar-sticky-container">
+                        <div class="left-buttons">
+                            <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                                <i class="fa fa-bars"></i>
+                            </button>
+                            <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                                <i class="fa fa-paint-brush"></i>
+                            </button>
+                            <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                                <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            </ul>
+                            
+                            <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                                <i class="fa fa-search"></i>
+                            </button>
+                            
+                        </div>
+
+                        <h1 class="menu-title">Envy Documentation</h1>
+
+                        <div class="right-buttons">
+                            <a href="print.html" title="Print this book" aria-label="Print this book">
+                                <i id="print-button" class="fa fa-print"></i>
+                            </a>
+                            
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#2-module-configuration" id="2-module-configuration">2. Module Configuration</a></h1>
+<p>The full set of available configuration options is documented in Appendix A;
+this chapter serves as an overview of the configuration process and provides
+examples of how the options may be used.</p>
+<p>Broadly, the process for configuring Envy is:</p>
+<ol>
+<li>Add non-plugin <code>init.vim</code> configuration.</li>
+<li>Enable the plugins you want to use.</li>
+<li>Specify any additional dependencies the plugins may have.</li>
+<li>Add per-plugin configuration.</li>
+<li>Pre-fetch and pin any shortname plugins (see chapter 3).</li>
+</ol>
+<h2><a class="header" href="#non-plugin-configuration" id="non-plugin-configuration">Non-plugin Configuration</a></h2>
+<p>Adapt your non-plugin <code>init.vim</code> configuration to use Envy's module options.</p>
+<p>By &quot;non-plugin&quot; here we mean specifically things that either don't depend
+on/configure <em>any</em> plugin, <em>or</em> that could depend on any one of several plugins
+(in which case, you should use Nix functionality to check which/whether any of
+those plugins are enabled and adapt the generated configuration appropriately).</p>
+<p>Envy provides a wide array of options here, so some examples may be helpful:</p>
+<pre><code class="language-nix">{ config, lib, pkgs, ... }:
+{
+  # Configfuration items that should or must precede everything else, including
+  # per-plugin pre-plugin-load configuration items
+  earlyConfig = ''
+    let mapleader = &quot;\&lt;Space&gt;&quot;
+    augroup vimrc
+      autocmd!
+    augroup END
+  '';
+  # Configuration items that should be done prior to loading any plugins (but
+  # don't depend on any single plugin); there is also `postPluginConfig` for
+  # configuration items that should be done after loading *all* plugins.
+  prePluginConfig = ''
+    set termguicolors
+    syntax enable
+  '';
+  # General configuration items that don't have any specific ordering
+  # requirements; these are appended to the generated init.vim file, so you can
+  # use e.g. `lib.mkAfter` if you need something to go at the very end of the
+  # file.
+  extraConfig = ''
+    set incsearch
+    set hlsearch
+    set ignorecase
+    set smartcase
+    set number
+    set relativenumber
+    set autoindent
+    set shiftwidth=2
+    set softtabstop=2
+    set tabstop=2
+    set expandtab
+
+    &quot; Use The Silver Searcher (ag) for search backend
+    let g:ackprg = 'ag --nogroup --column'
+    set grepprg:ag\ --nogroup\ --nocolor
+    nnoremap &lt;Leader&gt;o :exe ':silent !xdg-open % &amp;'&lt;CR&gt;
+  '';
+  # A list of packages whose executables should be added to the $PATH for
+  # neovim. These will *only* be added to neovim's path, not to the system or
+  # user profiles.
+  extraBinPackages = with pkgs; [
+    silver-searcher
+    xdg_utils # xdg-open
+  ];
+  # See chapter 3
+  mergePlugins = true;
+  # `files` can be used to build a symlink tree of files and folders, which
+  # would typically consist of any extra/local contents of .config/nvim/ in a
+  # non-Nix neovim setup.
+  files = {
+    neosnippets.source = &quot;/my/snippet/files/&quot;;
+  };
+}
+
+</code></pre>
+<h2><a class="header" href="#enabling-plugins" id="enabling-plugins">Enabling Plugins</a></h2>
+<p>You can enable both pre-existing Nix vim plugin derivations (e.g. from
+nixpkgs), and vim plugins on github, both by using
+<code>pluginRegistry.&lt;pluginName&gt;.enable</code>.</p>
+<p>There are several ways to specify the source for a plugin, depending on what
+you want:</p>
+<pre><code class="language-nix">{ config, lib, pkgs, ... }:
+{
+  pluginRegistry = {
+    # In this case, the name 'ale' is automatically 'resolved' against
+    # pkgs.vimPlugins to select the plugin source
+    ale.enable = true;
+    # In this case, `source` is explicitly pointed to an existing Vim plugin
+    # derivation.
+    &quot;denite.nvim&quot; = {
+      enable = true;
+      source = pkgs.vimPlugins.denite-nvim;
+    };
+    # In this case, the name fails to resolve against pkgs.vimPlugins, so
+    # `source` is automatically inferred from the `name`, on the assumption
+    # that it is a vim-plug-compatible 'shortname', which will be used to
+    # dynamically construct a derivation from a Vim plugin sourced from
+    # https://github.com/Shados/vim-session (see chapter 3).
+    &quot;Shados/vim-session&quot;.enable = true;
+    vim-buffet = {
+      enable = true;
+      # In this case, we again are using a shortname for the source, but we set
+      # it explicitly.
+      source = &quot;bagrat/vim-buffet&quot;;
+      # Additionally, we specify the exact commit we want to pin and use for the git source.
+      # Generally you are better off relying on the separate JSON pin files to
+      # pin to a specific commit, but in this case the version after this
+      # commit has breaking changes, which would mean the configuration of the
+      # plugin would also have to change, meaning that the commit information
+      # is more an element of configuration than of state. 'branch' and 'tag'
+      # are also supported for specifying what to fetch.
+      commit = &quot;044f2954a5e49aea8625973de68dda8750f1c42d&quot;;
+    };
+    localPlugin = {
+      enable = true;
+      # In this case, Envy will dynamically construct a derivation using the
+      # given Nix store path as the source.
+      source = /some/local/path/or/store/path;
+    };
+    inDevPlugin = {
+      enable = true;
+      # Here we instead instruct Envy to have Vim load the plugin from a local
+      # filesystem path at run-time, rather than bundling it into the Nix
+      # store. This is useful for doing plugin development, or if you otherwise
+      # want to use a plugin outside of the Nix store, while still allowing you
+      # to leverage Envy's configuration and dependency
+      # specification/resolution mechanisms.
+      dir = &quot;/a/local/path/string&quot;;
+    };
+  };
+}
+
+</code></pre>
+<h2><a class="header" href="#specifying-dependencies" id="specifying-dependencies">Specifying Dependencies</a></h2>
+<p>Envy allows for specifying a wide variety of dependency types:</p>
+<pre><code class="language-nix">{ config, lib, pkgs, ... }:
+{
+  pluginRegistry = {
+    # Inter-plugin dependencies; the items should preferably be the names of
+    # `pluginRegistry` or `vim.vimPlugins` items, but can alternatively be Vim
+    # plugin derivations.
+    neosnippet-snippets.dependencies = [ &quot;neosnippet-vim&quot; ];
+    # Specifies that a plugin needs external executables from the given
+    # packages made available in neovim's $PATH.
+    ale.binDeps = with pkgs; [
+      bash
+      shellcheck
+      shfmt
+    ];
+    # Ensures that the specified Lua modules will be made available in
+    # neovim's LUA_PATH/LUA_CPATH, meaning that the main neovim process can
+    # load them for in-process Lua plugins and scripts to use.
+    &quot;Shados/precog.nvim&quot;.luaDeps = ps: with ps; [
+      luafilesystem
+    ];
+    # Flags a plugin as being a 'remote' plugin requiring a plugin host for a
+    # specific language (here, Python 3).
+    denite-nvim.remote.python3 = true;
+    # Pulls in plugin-host-language dependencies.
+    # Automatically implies `remote.python2 = true;`.
+    aPythonPlugin.remote.python2Deps = ps: with ps; [
+      requests
+    ];
+  };
+}
+
+</code></pre>
+<p>Inter-plugin dependencies also determine the order in which Vim plugins are
+loaded at Vim run-time (by <a href="https://github.com/junegunn/vim-plug">vim-plug</a>).</p>
+<p>There are additionally two &quot;soft&quot; dependency options (<code>before</code> and <code>after</code>,
+both of which take lists of plugin names only), that change how plugins are
+ordered if both are enabled, but does not cause the &quot;dependency&quot; to be enabled
+if the &quot;dependent&quot; plugin is, e.g.:</p>
+<pre><code class="language-nix">{ config, lib, pkgs, ... }:
+{
+  pluginRegistry = {
+    # vim-devicons needs to be loaded after these plugins, if they
+    # are being used, as per its installation guide
+    vim-devicons.after = [
+      &quot;nerdtree&quot; &quot;vim-airline&quot; &quot;ctrlp-vim&quot; &quot;powerline/powerline&quot; &quot;denite-nvim&quot;
+      &quot;unite-vim&quot; &quot;lightline-vim&quot; &quot;vim-startify&quot; &quot;vimfiler&quot; &quot;vim-flagship&quot;
+    ];
+  };
+}
+
+</code></pre>
+<h2><a class="header" href="#plugin-configuration" id="plugin-configuration">Plugin Configuration</a></h2>
+<p>There are per-plugin versions of the <code>earlyConfig</code>, <code>prePluginConfig</code>, and
+<code>postPluginConfig</code> options under <code>pluginRegistry.&lt;pluginName&gt;.nvimrc</code>, named
+<code>early</code>, <code>prePlugin</code>, and <code>postPlugin</code> respectively. These are inserted into
+the generated neovim <code>init.vim</code> file immediately after or before the generic
+versions.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="chapter_1.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="chapter_3.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a href="chapter_1.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a href="chapter_3.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>

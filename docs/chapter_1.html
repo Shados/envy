@@ -1,0 +1,291 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Setup - Envy Documentation</title>
+        
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body class="light">
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            document.body.className = theme;
+            document.querySelector('html').className = theme + ' js';
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="chapter_1.html" class="active"><strong aria-hidden="true">1.</strong> Setup</a></li><li><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Module Configuration</a></li><li><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Packaging Plugins</a></li><li><a href="chapter_4.html"><strong aria-hidden="true">4.</strong> Advanced Usage</a></li><li class="spacer"></li><li class="affix"><a href="options.html">A. Configuration Options</a></li><li class="affix"><a href="tools.html">B. Tools</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div id="menu-bar-sticky-container">
+                        <div class="left-buttons">
+                            <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                                <i class="fa fa-bars"></i>
+                            </button>
+                            <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                                <i class="fa fa-paint-brush"></i>
+                            </button>
+                            <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                                <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            </ul>
+                            
+                            <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                                <i class="fa fa-search"></i>
+                            </button>
+                            
+                        </div>
+
+                        <h1 class="menu-title">Envy Documentation</h1>
+
+                        <div class="right-buttons">
+                            <a href="print.html" title="Print this book" aria-label="Print this book">
+                                <i id="print-button" class="fa fa-print"></i>
+                            </a>
+                            
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#1-basic-usage" id="1-basic-usage">1. Basic Usage</a></h1>
+<p>The main Envy module can basically be used in three different ways:</p>
+<ol>
+<li>It can be used as a NixOS module, to configure neovim system-wide.</li>
+<li>It can be used as a home-manager module, to configure neovim on a per-user
+basis.</li>
+<li>It can be used standalone, e.g. in order to configure a custom neovim
+instance for a project's <code>shell.nix</code>.</li>
+</ol>
+<p>In each of these uses, the module is configured in basically the same way, but
+adding/accessing the module to begin with differs.</p>
+<h2><a class="header" href="#module-setup" id="module-setup">Module Setup</a></h2>
+<p>Both the NixOS and home-manager modules expose the configuration interface
+under <code>sn.programs.neovim</code> in NixOS; if you want to use a different
+attribute path for it, take a look at the
+<code>envy/nixos.nix</code>/<code>envy/home-manager.nix</code> source and manually do the same.</p>
+<p>Both modules take an <code>enabled</code> argument, which defaults to <code>true</code>, rather than
+exposing a <code>sn.programs.neovim.enable</code> option, due to a technical limitation.</p>
+<h3><a class="header" href="#nixos" id="nixos">NixOS</a></h3>
+<p>Add the <code>envy/nixos.nix</code> module to <code>imports</code> in your <code>configuration.nix</code>:</p>
+<pre><code class="language-nix">{ config, lib, pkgs, ... }:
+let
+  envy = (builtins.fetchgit { url = https://github.com/Shados/envy; ref = &quot;master&quot;; });
+in
+{
+  imports = [
+    (import &quot;${envy}/nixos.nix&quot; { })
+    ...
+  ];
+  ...
+}
+</code></pre>
+<h3><a class="header" href="#home-manager" id="home-manager">home-manager</a></h3>
+<p>Add the <code>envy/home-manager.nix</code> module to <code>imports</code> in your <code>configuration.nix</code>:</p>
+<pre><code class="language-nix">{ config, lib, pkgs, ... }:
+let
+  envy = (builtins.fetchgit { url = https://github.com/Shados/envy; ref = &quot;master&quot;; });
+in
+{
+  imports = [
+    (import &quot;${envy}/home-manager.nix&quot; { mergeNixosDefinitions = false; })
+    ...
+  ];
+  ...
+}
+</code></pre>
+<p><code>mergeNixosDefinitions</code> controls whether or not any <code>sn.programs.neovim</code>
+settings from the current system's NixOS configuration should be merged into
+the home-manager defintions. This allows for &quot;layering&quot; user-level neovim
+configuration on top of the system-wide config. It is <code>false</code> by default.</p>
+<h2><a class="header" href="#standalone-setup" id="standalone-setup">Standalone Setup</a></h2>
+<p>Usage as a standalone module is slightly more complicated, and is most easily
+done by use of the <code>configuredNeovimModule</code> in Envy's <code>lib</code> module:</p>
+<pre><code class="language-nix">{ nixpkgs ? import &lt;nixpkgs&gt; { } }:
+let
+  envy = (builtins.fetchgit { url = https://github.com/Shados/envy; ref = &quot;master&quot;; });
+  envyLib = (import &quot;${envy}/lib.nix&quot; { inherit nixpkgs; });
+  envyModule = envyLib.configuredNeovimModule {
+    # Whether or not to merge in Envy config pulled from the current NixOS Envy
+    # module configuration
+    withNixosConfig = false;
+    # Whether or not to merge in Envy config pulled from the current
+    # home-manager-in-NixOS Envy module configuration
+    withNixosHMConfig = false;
+    # Whether or not to merge in Envy config pulled from the current
+    # home-manager Envy module configuration
+    withHMConfig = false;
+    nvimConfig = { config, lib, pkgs, ... }: {
+      # Envy module config here
+      pluginRegistry = {
+        ...
+      };
+    };
+  }
+in
+nixpkgs.mkShell {
+  ...
+  buildInputs = [
+    envyModule.wrappedNeovim
+    ...
+  ];
+}
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="chapter_2.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a href="introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a href="chapter_2.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>

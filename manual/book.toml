@@ -1,0 +1,13 @@
+[book]
+authors = ["Alexei Robyn"]
+multilingual = false
+src = "src"
+title = "Envy Documentation"
+use-default-preprocessors = false
+
+[build]
+build-dir = "../docs"
+
+[output.html]
+# Bundled a custom highlight.js including Nix highlighting
+theme = "theme"
