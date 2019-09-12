@@ -18,11 +18,6 @@ rec {
     , withHMConfig ? false, withNixosConfig ? false, withNixosHMConfig ? false
     , hmPath ? <home-manager>, hmConfPath ? "", hmConfAttr ? ""
     }:
-    # TODO figure out why this first assertion is failing even though I can
-    # traceVal the asserted value and it is true...
-    # assert !withHMConfig || (homeManagerNvimEnabled && !withNixosHMConfig);
-    # assert !withNixosConfig || nixosNvimEnabled;
-    # assert !withNixosHMConfig || (nixosHMSubmoduleNvimEnabled && !withHMConfig);
     let
       nixpkgsPath = pkgs.path;
       cfg = (evalModules {
@@ -37,9 +32,6 @@ rec {
       }).config;
     in cfg;
 
-  homeManagerNvimEnabled = builtins.getEnv "HM_NVIM_ENABLED" == "true";
-  nixosNvimEnabled = builtins.getEnv "NIXOS_NVIM_ENABLED" == "true";
-  nixosHMSubmoduleNvimEnabled = builtins.getEnv "NIXOS_HM_NVIM_ENABLED" == "true";
   nixosConfigPath = let
     envPath = builtins.getEnv "NIXOS_CONFIG";
   in if envPath != "" then envPath else <nixos-config>;

@@ -429,23 +429,6 @@ if __name__ == "__main__":
     ):
         aparser.error("You must specify at least one of -c, -m, -n, or -s")
 
-    if cli_args.source_home_manager and "HM_NVIM_ENABLED" not in os.environ:
-        aparser.error(
-            "-m has been specified, but the current environment has not been "
-            "built using home-manager with the neovim module enabled"
-        )
-    if cli_args.source_nixos and "NIXOS_NVIM_ENABLED" not in os.environ:
-        aparser.error(
-            "-n has been specified, but the current environment has not been "
-            "built using nixos with the neovim module enabled"
-        )
-    if cli_args.source_nixos_hm_submodule and "NIXOS_HM_NVIM_ENABLED" not in os.environ:
-        aparser.error(
-            "-m has been specified, but the current environment has not been "
-            "built using home-manager embedded in nixos with the neovim module "
-            "enabled"
-        )
-
     if cli_args.json_source_map and any(
         [
             "include_dependencies" in cli_args and cli_args.include_dependencies,
