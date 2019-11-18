@@ -72,11 +72,12 @@ symlink_path = (paths) ->
       when "directory"
         mkdirp out, target
         dir_iter, iter_state = lfs.dir source
-        -- Skip . and ..
-        iter_state\next!
-        iter_state\next!
         -- Add child paths to the ones we're working on
         for child, _ in dir_iter, iter_state, nil
+          -- Skip . and ..; can't just skip the first two children because
+          -- under some conditions they're not ordered first. No idea what
+          -- causes that.
+          continue if child == "." or child == ".."
           paths[#paths + 1] = {
             source: "#{source}/#{child}"
             target: "#{target}/#{child}"
