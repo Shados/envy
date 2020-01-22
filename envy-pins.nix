@@ -15,7 +15,7 @@ let
     doCheck = false;
     buildInputs = [];
     propagatedBuildInputs = [
-      pbr
+      setuptools pbr
     ];
     meta = with pkgs.stdenv.lib; {
       homepage = "https://github.com/retr0h/git-url-parse";
