@@ -356,13 +356,14 @@ async def prefetch_all(srclist):
 
 async def nix_prefetch_src(src):
     plug_name, plug_src = src
+    logging.debug(f"Got plugin {plug_name} with source {plug_src}")
     cmd = ["nix-prefetch-git"]
     if "commit" in plug_src:
         cmd.extend(["--rev", plug_src["commit"]])
     elif "tag" in plug_src:
         cmd.extend(["--rev", plug_src["tag"]])
     elif "branch" in plug_src:
-        cmd.extend(["--branch-name", plug_src["branch"]])
+        cmd.extend(["--rev", f"refs/heads/{plug_src['branch']}"])
     if "leaveDotGit" in plug_src:
         cmd.append("--leave-dotGit")
     if "fetchSubmodules" in plug_src:
@@ -370,6 +371,7 @@ async def nix_prefetch_src(src):
     if "deepClone" not in plug_src:
         cmd.append("--no-deepClone")
     cmd.extend(["--url", plug_src["url"]])
+    logging.debug(f"Executing source fetch command {cmd}")
 
     proc = await asyncio.create_subprocess_exec(
         *cmd,
