@@ -347,10 +347,10 @@ let
       if plugin.dir != null
         then  plugin // { pluginType = "local"; }
 
-      else if plugin ? source && isDerivation plugin.source
+      else if plugin ? source && isDerivation plugin.source && hasPrefix "vimplugin-" plugin.source.name
         then  plugin // { pluginType = "upstream"; }
 
-      else if plugin ? source && (builtins.typeOf plugin.source) == "path"
+      else if plugin ? source && ((builtins.typeOf plugin.source) == "path" || isDerivation plugin.source)
         then  plugin // { pluginType = "path"; }
 
       else    plugin // { pluginType = "source"; };
