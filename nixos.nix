@@ -11,6 +11,9 @@ in
     sn.programs.neovim = mkOption {
       type = types.submodule vimPkgModule;
       default = {};
+      description = ''
+        Neovim configuration.
+      '';
     };
   };
   config = mkIf enabled {
