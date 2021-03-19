@@ -75,24 +75,19 @@ let
     # doing this in bash would be less nice, jq isn't that great for working
     # with collections.
     luaDeps = ps: with ps; [ inspect luafilesystem rapidjson ];
+    luaPkg = pkgs.luajit.withPackages luaDeps;
     luaBuilder = pkgs.runCommand "config-nvim-builder.lua"
       {
         script = ./config-nvim-builder.moon;
-        luaPkg = pkgs.luajit.withPackages(luaDeps);
         buildInputs = [
           pkgs.luajitPackages.moonscript
         ];
       }
       ''
         moonc -o "$out" "$script"
-
-        # Insert pure, wrapped lua shebang
-        sed -i "1 i #!$luaPkg/bin/lua" "$out"
-
-        chmod +x "$out"
       '';
   in ''
-    ${luaBuilder} ${filesJson} $out
+    ${luaPkg}/bin/lua ${luaBuilder} ${filesJson} $out
   '');
   # }}}
 
