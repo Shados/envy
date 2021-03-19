@@ -17,7 +17,7 @@ let
     propagatedBuildInputs = [
       setuptools pbr
     ];
-    meta = with pkgs.stdenv.lib; {
+    meta = with pkgs.lib; {
       homepage = "https://github.com/retr0h/git-url-parse";
       license = licenses.mit;
       description = "git-url-parse - A simple GIT URL parser.";

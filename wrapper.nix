@@ -49,7 +49,7 @@ let
         ${concatStringsSep " \\\n  " wrapperArgs}
     '';
   in stdenv.mkDerivation rec {
-    name = "neovim-configured-${stdenv.lib.getVersion neovim}";
+    name = "neovim-configured-${lib.getVersion neovim}";
     buildCommand = ''
       if [ ! -x "${bin}" ]
       then
