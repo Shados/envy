@@ -1,26 +1,40 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js">
+<html lang="en" class="sidebar-visible no-js light">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
         <title>Setup - Envy Documentation</title>
         
+        
+
+
+        <!-- Custom HTML head -->
+        
+
 
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
 
+        
+        <link rel="icon" href="favicon.svg">
+        
+        
         <link rel="shortcut icon" href="favicon.png">
+        
         <link rel="stylesheet" href="css/variables.css">
         <link rel="stylesheet" href="css/general.css">
         <link rel="stylesheet" href="css/chrome.css">
+        
         <link rel="stylesheet" href="css/print.css" media="print">
+        
 
         <!-- Fonts -->
         <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
-        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+        
+        <link rel="stylesheet" href="fonts/fonts.css">
+        
 
         <!-- Highlight.js Stylesheets -->
         <link rel="stylesheet" href="highlight.css">
@@ -32,11 +46,11 @@
 
         
     </head>
-    <body class="light">
+    <body>
         <!-- Provide site root to javascript -->
         <script type="text/javascript">
             var path_to_root = "";
-            var default_theme = "light";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
@@ -60,8 +74,11 @@
             var theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
-            document.body.className = theme;
-            document.querySelector('html').className = theme + ' js';
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
         </script>
 
         <!-- Hide / unhide sidebar before it is displayed -->
@@ -78,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="chapter_1.html" class="active"><strong aria-hidden="true">1.</strong> Setup</a></li><li><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Module Configuration</a></li><li><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Packaging Plugins</a></li><li><a href="chapter_4.html"><strong aria-hidden="true">4.</strong> Advanced Usage</a></li><li class="spacer"></li><li class="affix"><a href="options.html">A. Configuration Options</a></li><li class="affix"><a href="tools.html">B. Tools</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="chapter_1.html" class="active"><strong aria-hidden="true">1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Module Configuration</a></li><li class="chapter-item expanded "><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Packaging Plugins</a></li><li class="chapter-item expanded "><a href="chapter_4.html"><strong aria-hidden="true">4.</strong> Advanced Usage</a></li><li class="spacer"></li><li class="chapter-item expanded affix "><a href="options.html">A. Configuration Options</a></li><li class="chapter-item expanded affix "><a href="tools.html">B. Tools</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -87,37 +104,38 @@
 
             <div class="page">
                 
-                <div id="menu-bar" class="menu-bar">
-                    <div id="menu-bar-sticky-container">
-                        <div class="left-buttons">
-                            <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
-                                <i class="fa fa-bars"></i>
-                            </button>
-                            <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
-                                <i class="fa fa-paint-brush"></i>
-                            </button>
-                            <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                                <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
-                                <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
-                                <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
-                                <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
-                                <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
-                            </ul>
-                            
-                            <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
-                                <i class="fa fa-search"></i>
-                            </button>
-                            
-                        </div>
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
 
-                        <h1 class="menu-title">Envy Documentation</h1>
+                    <h1 class="menu-title">Envy Documentation</h1>
 
-                        <div class="right-buttons">
-                            <a href="print.html" title="Print this book" aria-label="Print this book">
-                                <i id="print-button" class="fa fa-print"></i>
-                            </a>
-                            
-                        </div>
+                    <div class="right-buttons">
+                        
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
                     </div>
                 </div>
 
@@ -145,7 +163,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#1-basic-usage" id="1-basic-usage">1. Basic Usage</a></h1>
+                        <h1 id="1-basic-usage"><a class="header" href="#1-basic-usage">1. Basic Usage</a></h1>
 <p>The main Envy module can basically be used in three different ways:</p>
 <ol>
 <li>It can be used as a NixOS module, to configure neovim system-wide.</li>
@@ -156,14 +174,14 @@ instance for a project's <code>shell.nix</code>.</li>
 </ol>
 <p>In each of these uses, the module is configured in basically the same way, but
 adding/accessing the module to begin with differs.</p>
-<h2><a class="header" href="#module-setup" id="module-setup">Module Setup</a></h2>
+<h2 id="module-setup"><a class="header" href="#module-setup">Module Setup</a></h2>
 <p>Both the NixOS and home-manager modules expose the configuration interface
 under <code>sn.programs.neovim</code> in NixOS; if you want to use a different
 attribute path for it, take a look at the
 <code>envy/nixos.nix</code>/<code>envy/home-manager.nix</code> source and manually do the same.</p>
 <p>Both modules take an <code>enabled</code> argument, which defaults to <code>true</code>, rather than
 exposing a <code>sn.programs.neovim.enable</code> option, due to a technical limitation.</p>
-<h3><a class="header" href="#nixos" id="nixos">NixOS</a></h3>
+<h3 id="nixos"><a class="header" href="#nixos">NixOS</a></h3>
 <p>Add the <code>envy/nixos.nix</code> module to <code>imports</code> in your <code>configuration.nix</code>:</p>
 <pre><code class="language-nix">{ config, lib, pkgs, ... }:
 let
@@ -177,7 +195,7 @@ in
   ...
 }
 </code></pre>
-<h3><a class="header" href="#home-manager" id="home-manager">home-manager</a></h3>
+<h3 id="home-manager"><a class="header" href="#home-manager">home-manager</a></h3>
 <p>Add the <code>envy/home-manager.nix</code> module to <code>imports</code> in your <code>configuration.nix</code>:</p>
 <pre><code class="language-nix">{ config, lib, pkgs, ... }:
 let
@@ -195,7 +213,7 @@ in
 settings from the current system's NixOS configuration should be merged into
 the home-manager defintions. This allows for &quot;layering&quot; user-level neovim
 configuration on top of the system-wide config. It is <code>false</code> by default.</p>
-<h2><a class="header" href="#standalone-setup" id="standalone-setup">Standalone Setup</a></h2>
+<h2 id="standalone-setup"><a class="header" href="#standalone-setup">Standalone Setup</a></h2>
 <p>Usage as a standalone module is slightly more complicated, and is most easily
 done by use of the <code>configuredNeovimModule</code> in Envy's <code>lib</code> module:</p>
 <pre><code class="language-nix">{ nixpkgs ? import &lt;nixpkgs&gt; { } }:
@@ -252,13 +270,13 @@ nixpkgs.mkShell {
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a href="introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a href="chapter_2.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="chapter_2.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 
@@ -268,6 +286,14 @@ nixpkgs.mkShell {
 
         
 
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
         
 
         

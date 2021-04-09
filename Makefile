@@ -9,7 +9,7 @@ MANUAL_BUILD=docs
 # Files
 MANUAL_SRC_FILES=$(wildcard $(MANUAL_SRC)/*.md)
 
-.PHONY: all clean book-watch
+.PHONY: all clean book book-watch
 
 all: book
 

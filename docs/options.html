@@ -1,26 +1,40 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js">
+<html lang="en" class="sidebar-visible no-js light">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
         <title>A. Configuration Options - Envy Documentation</title>
         
+        
+
+
+        <!-- Custom HTML head -->
+        
+
 
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
 
+        
+        <link rel="icon" href="favicon.svg">
+        
+        
         <link rel="shortcut icon" href="favicon.png">
+        
         <link rel="stylesheet" href="css/variables.css">
         <link rel="stylesheet" href="css/general.css">
         <link rel="stylesheet" href="css/chrome.css">
+        
         <link rel="stylesheet" href="css/print.css" media="print">
+        
 
         <!-- Fonts -->
         <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
-        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+        
+        <link rel="stylesheet" href="fonts/fonts.css">
+        
 
         <!-- Highlight.js Stylesheets -->
         <link rel="stylesheet" href="highlight.css">
@@ -32,11 +46,11 @@
 
         
     </head>
-    <body class="light">
+    <body>
         <!-- Provide site root to javascript -->
         <script type="text/javascript">
             var path_to_root = "";
-            var default_theme = "light";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
@@ -60,8 +74,11 @@
             var theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
-            document.body.className = theme;
-            document.querySelector('html').className = theme + ' js';
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
         </script>
 
         <!-- Hide / unhide sidebar before it is displayed -->
@@ -78,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="affix"><a href="introduction.html">Introduction</a></li><li><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> Setup</a></li><li><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Module Configuration</a></li><li><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Packaging Plugins</a></li><li><a href="chapter_4.html"><strong aria-hidden="true">4.</strong> Advanced Usage</a></li><li class="spacer"></li><li class="affix"><a href="options.html" class="active">A. Configuration Options</a></li><li class="affix"><a href="tools.html">B. Tools</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Module Configuration</a></li><li class="chapter-item expanded "><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Packaging Plugins</a></li><li class="chapter-item expanded "><a href="chapter_4.html"><strong aria-hidden="true">4.</strong> Advanced Usage</a></li><li class="spacer"></li><li class="chapter-item expanded affix "><a href="options.html" class="active">A. Configuration Options</a></li><li class="chapter-item expanded affix "><a href="tools.html">B. Tools</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -87,37 +104,38 @@
 
             <div class="page">
                 
-                <div id="menu-bar" class="menu-bar">
-                    <div id="menu-bar-sticky-container">
-                        <div class="left-buttons">
-                            <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
-                                <i class="fa fa-bars"></i>
-                            </button>
-                            <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
-                                <i class="fa fa-paint-brush"></i>
-                            </button>
-                            <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                                <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
-                                <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
-                                <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
-                                <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
-                                <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
-                            </ul>
-                            
-                            <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
-                                <i class="fa fa-search"></i>
-                            </button>
-                            
-                        </div>
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
 
-                        <h1 class="menu-title">Envy Documentation</h1>
+                    <h1 class="menu-title">Envy Documentation</h1>
 
-                        <div class="right-buttons">
-                            <a href="print.html" title="Print this book" aria-label="Print this book">
-                                <i id="print-button" class="fa fa-print"></i>
-                            </a>
-                            
-                        </div>
+                    <div class="right-buttons">
+                        
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
                     </div>
                 </div>
 
@@ -145,9 +163,9 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#a-configuration-options" id="a-configuration-options">A. Configuration Options</a></h1>
+                        <h1 id="a-configuration-options"><a class="header" href="#a-configuration-options">A. Configuration Options</a></h1>
 <div class="option">
-<h3><a class="header" href="#basevimplugins" id="basevimplugins"><code>baseVimPlugins</code></a></h3>
+<h3 id="basevimplugins"><a class="header" href="#basevimplugins"><code>baseVimPlugins</code></a></h3>
 <div class="option_description">
 <p>Base set of vim plugin derivations to resolve string/name-based plugin
 dependencies against.</p>
@@ -158,13 +176,13 @@ dependencies against.</p>
 <p><em>Type:</em> attribute set</p>
 </li>
 <li>
-<p><em>Default:</em> <code>pkgs.vimPlugins</code></p>
+<p><em>Default:</em> <code>base vimPlugins without aliases</code></p>
 </li>
 </ul>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#earlyconfig" id="earlyconfig"><code>earlyConfig</code></a></h3>
+<h3 id="earlyconfig"><a class="header" href="#earlyconfig"><code>earlyConfig</code></a></h3>
 <div class="option_description">
 <p>Extra lines of <code>init.vim</code> configuration that need to be as early as possible in
 the file.</p>
@@ -181,7 +199,7 @@ the file.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#extrabinpackages" id="extrabinpackages"><code>extraBinPackages</code></a></h3>
+<h3 id="extrabinpackages"><a class="header" href="#extrabinpackages"><code>extraBinPackages</code></a></h3>
 <div class="option_description">
 <p>A list of derivations containing executables that need to be available in the
 <code>$PATH</code> of the neovim process for this plugin to use.</p>
@@ -205,7 +223,7 @@ neovim.</li>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#extraconfig" id="extraconfig"><code>extraConfig</code></a></h3>
+<h3 id="extraconfig"><a class="header" href="#extraconfig"><code>extraConfig</code></a></h3>
 <div class="option_description">
 <p>Extra lines of <code>init.vim</code> configuration to append to the generated ones.</p>
 </div>
@@ -221,7 +239,7 @@ neovim.</li>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#extrapython2packages" id="extrapython2packages"><code>extraPython2Packages</code></a></h3>
+<h3 id="extrapython2packages"><a class="header" href="#extrapython2packages"><code>extraPython2Packages</code></a></h3>
 <div class="option_description">
 <p>A function in <code>python.withPackages</code> format, which returns a list of Python 2
 packages required for your plugins to work.</p>
@@ -246,7 +264,7 @@ plugin that is <em>not</em> being managed by this module.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#extrapython3packages" id="extrapython3packages"><code>extraPython3Packages</code></a></h3>
+<h3 id="extrapython3packages"><a class="header" href="#extrapython3packages"><code>extraPython3Packages</code></a></h3>
 <div class="option_description">
 <p>A function in <code>python.withPackages</code> format, which returns a list of Python 3
 packages required for your plugins to work.</p>
@@ -271,7 +289,7 @@ plugin that is <em>not</em> being managed by this module.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#files" id="files"><code>files</code></a></h3>
+<h3 id="files"><a class="header" href="#files"><code>files</code></a></h3>
 <div class="option_description">
 <p>Files and folders to link into a folder in the runtimepath; outside of Nix these
 would typically be locally-managed files in the <code>~/.config/nvim</code> folder.</p>
@@ -308,7 +326,7 @@ would typically be locally-managed files in the <code>~/.config/nvim</code> fold
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#filesnameenable" id="filesnameenable"><code>files.&lt;name&gt;.enable</code></a></h3>
+<h3 id="filesnameenable"><a class="header" href="#filesnameenable"><code>files.&lt;name&gt;.enable</code></a></h3>
 <div class="option_description">
 <p>Whether or not this neovim file should be generated. This option allows specific
 files to be disabled.</p>
@@ -325,7 +343,7 @@ files to be disabled.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#filesnamesource" id="filesnamesource"><code>files.&lt;name&gt;.source</code></a></h3>
+<h3 id="filesnamesource"><a class="header" href="#filesnamesource"><code>files.&lt;name&gt;.source</code></a></h3>
 <div class="option_description">
 <p>Path to the file or directory to symlink in.</p>
 <p>If the source is a directory, a directory with a corresponding name will be
@@ -341,7 +359,7 @@ directories.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#filesnametarget" id="filesnametarget"><code>files.&lt;name&gt;.target</code></a></h3>
+<h3 id="filesnametarget"><a class="header" href="#filesnametarget"><code>files.&lt;name&gt;.target</code></a></h3>
 <div class="option_description">
 <p>Name of the symlink, relative to the folder added to the neovim runtimepath.
 Defaults to the attribute name.</p>
@@ -353,7 +371,7 @@ Defaults to the attribute name.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#filesnametext" id="filesnametext"><code>files.&lt;name&gt;.text</code></a></h3>
+<h3 id="filesnametext"><a class="header" href="#filesnametext"><code>files.&lt;name&gt;.text</code></a></h3>
 <div class="option_description">
 <p>Literal text of the file. Used to generate a file to set the source option.</p>
 </div>
@@ -369,429 +387,7 @@ Defaults to the attribute name.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#fullpluginregistrynameenable" id="fullpluginregistrynameenable"><code>fullPluginRegistry.&lt;name&gt;.enable</code></a></h3>
-<div class="option_description">
-<p>Whether or not this neovim plugin should be installed and used.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li><em>Type:</em> boolean</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynameafter" id="fullpluginregistrynameafter"><code>fullPluginRegistry.&lt;name&gt;.after</code></a></h3>
-<div class="option_description">
-<p>List of other vim plugins that this plugin should be loaded <em>after</em>.</p>
-<p>This can be seen as a &quot;soft&quot; form of making each of the listed plugins
-dependencies of this plugin.</p>
-<p>Items must be strings representings either vim-plug-compatible git repository
-urls, or base <code>vimPlugins</code> attribute names.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> list of strings</p>
-</li>
-<li>
-<p><em>Default:</em> <code>{}</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynamebefore" id="fullpluginregistrynamebefore"><code>fullPluginRegistry.&lt;name&gt;.before</code></a></h3>
-<div class="option_description">
-<p>List of other vim plugins that this plugin should be loaded <em>before</em>.</p>
-<p>This can be seen as a &quot;soft&quot; form of making this plugin a dependency of each of
-the listed plugins.</p>
-<p>Items must be strings representings either vim-plug-compatible git repository
-urls, or base <code>vimPlugins</code> attribute names.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> list of strings</p>
-</li>
-<li>
-<p><em>Default:</em> <code>{}</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynamebindeps" id="fullpluginregistrynamebindeps"><code>fullPluginRegistry.&lt;name&gt;.binDeps</code></a></h3>
-<div class="option_description">
-<p>A list of derivations containing executables that need to be available in the
-<code>$PATH</code> of the neovim process for this plugin to use.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> list of packages</p>
-</li>
-<li>
-<p><em>Default:</em> <code>{}</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynamebranch" id="fullpluginregistrynamebranch"><code>fullPluginRegistry.&lt;name&gt;.branch</code></a></h3>
-<div class="option_description">
-<p>Branch of the git source to fetch and use. The <code>tag</code> and <code>commit</code> options
-effectively override this.</p>
-<p>Leave as <code>null</code> to simply use the branch of <code>HEAD</code> (typically, <code>master</code>).</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or string</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynamecommit" id="fullpluginregistrynamecommit"><code>fullPluginRegistry.&lt;name&gt;.commit</code></a></h3>
-<div class="option_description">
-<p>Commit of the git source to fetch and use.</p>
-<p>Leave as <code>null</code> to simply use the <code>HEAD</code>.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or string</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynamedependencies" id="fullpluginregistrynamedependencies"><code>fullPluginRegistry.&lt;name&gt;.dependencies</code></a></h3>
-<div class="option_description">
-<p>List of other vim plugins that are dependencies of this plugin.</p>
-<p>Items can be either strings representings vim-plug-compatible git repository
-urls, base <code>vimPlugins</code> attribute names, or existing vim plugin derivations.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> list of string or packages</p>
-</li>
-<li>
-<p><em>Default:</em> <code>{}</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynamedir" id="fullpluginregistrynamedir"><code>fullPluginRegistry.&lt;name&gt;.dir</code></a></h3>
-<div class="option_description">
-<p>If set, specifies a directory path that the plugin should be loaded from at
-neovim run-time, avoiding the use of a Nix-provided plugin directory.</p>
-<p>Relative paths will be relative to the generated <code>init.vim</code>, which is in the Nix
-store. As the value is passed into a '-quoted VimL string, it is possible to
-escape this to use a relative path, e.g.:</p>
-<pre><code class="language-nix">' . $HOME. '/.config/vim/local/some-plugin
-</code></pre>
-<p>If this is set, <code>source</code> will not be used.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or string</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynamefor" id="fullpluginregistrynamefor"><code>fullPluginRegistry.&lt;name&gt;.for</code></a></h3>
-<div class="option_description">
-<p>One or more filetypes that should trigger on-demand loading of this plugin.</p>
-<p>Can be specified with either a single string or list of strings.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> string or list of strings</p>
-</li>
-<li>
-<p><em>Default:</em> <code>{}</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynameluadeps" id="fullpluginregistrynameluadeps"><code>fullPluginRegistry.&lt;name&gt;.luaDeps</code></a></h3>
-<div class="option_description">
-<p>A function that takes an attribute set of Lua packages (typically passed from
-nixpkgs) and returns a list of Lua packages that this plugin depends on.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> lua packages in `lua.withPackages` format</p>
-</li>
-<li>
-<p><em>Default:</em> <code>packageSet: []</code></p>
-</li>
-<li>
-<p><em>Example:</em></p>
-<pre><code class="language-nix">(packageSet: with packageSet: [ luafilesystem ])
-</code></pre>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynamemergeable" id="fullpluginregistrynamemergeable"><code>fullPluginRegistry.&lt;name&gt;.mergeable</code></a></h3>
-<div class="option_description">
-<p>Whether or not it is safe to merge this plugin with others in the same bucket in
-the load order.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> boolean</p>
-</li>
-<li>
-<p><em>Default:</em> <code>true</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynamenvimrccondition" id="fullpluginregistrynamenvimrccondition"><code>fullPluginRegistry.&lt;name&gt;.nvimrc.condition</code></a></h3>
-<div class="option_description">
-<p>A VimL expression that will be evaluated to determine whether or not to execute
-the vim-plug 'Plug' command for this plugin (which will typically load the
-plugin, or configure it to be lazily loaded).</p>
-<p>Leave null in order to unconditionally always run the 'Plug' command for this
-plugin.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or string</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynamenvimrcearly" id="fullpluginregistrynamenvimrcearly"><code>fullPluginRegistry.&lt;name&gt;.nvimrc.early</code></a></h3>
-<div class="option_description">
-<p>Extra lines of <code>init.vim</code> configuration associated with this plugin, that need
-to be as early as possible in the file.</p>
-<p>Leave null if no such extra configuration is required.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or strings concatenated with &quot;\n&quot;</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynamenvimrcpostplugin" id="fullpluginregistrynamenvimrcpostplugin"><code>fullPluginRegistry.&lt;name&gt;.nvimrc.postPlugin</code></a></h3>
-<div class="option_description">
-<p>Extra lines of <code>init.vim</code> configuration associated with this plugin, that need
-to be executed after the plugin loading.</p>
-<p>Leave null if no such extra configuration is required.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or strings concatenated with &quot;\n&quot;</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynamenvimrcpreplugin" id="fullpluginregistrynamenvimrcpreplugin"><code>fullPluginRegistry.&lt;name&gt;.nvimrc.prePlugin</code></a></h3>
-<div class="option_description">
-<p>Extra lines of <code>init.vim</code> configuration associated with this plugin, that need
-to be executed before the plugin loading.</p>
-<p>Leave null if no such extra configuration is required.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or strings concatenated with &quot;\n&quot;</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynameon" id="fullpluginregistrynameon"><code>fullPluginRegistry.&lt;name&gt;.on</code></a></h3>
-<div class="option_description">
-<p>One or more command or &lt;Plug&gt;-mappings that should trigger on-demand loading
-of this plugin.</p>
-<p>Can be specified with either a single string or list of strings.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> string or list of strings</p>
-</li>
-<li>
-<p><em>Default:</em> <code>{}</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynameremotepython2" id="fullpluginregistrynameremotepython2"><code>fullPluginRegistry.&lt;name&gt;.remote.python2</code></a></h3>
-<div class="option_description">
-<p>Whether or not this plugin requires the remote plugin host for Python 2.</p>
-<p>Will effectively be set to true if any Python 2 package dependencies are
-specified for this plugin.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li><em>Type:</em> boolean</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynameremotepython2deps" id="fullpluginregistrynameremotepython2deps"><code>fullPluginRegistry.&lt;name&gt;.remote.python2Deps</code></a></h3>
-<div class="option_description">
-<p>A function that takes an attribute set of Python 2 packages (typically passed
-from nixpkgs) and returns a list of Python 2 packages that this plugin depends
-on.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> python2 packages in `python2.withPackages` format</p>
-</li>
-<li>
-<p><em>Default:</em> <code>packageSet: []</code></p>
-</li>
-<li>
-<p><em>Example:</em></p>
-<pre><code class="language-nix">(packageSet: with packageSet: [ pandas jedi ])
-</code></pre>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynameremotepython3" id="fullpluginregistrynameremotepython3"><code>fullPluginRegistry.&lt;name&gt;.remote.python3</code></a></h3>
-<div class="option_description">
-<p>Whether or not this plugin requires the remote plugin host for Python 3.</p>
-<p>Will effectively be set to true if any Python 3 package dependencies are
-specified for this plugin.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li><em>Type:</em> boolean</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynameremotepython3deps" id="fullpluginregistrynameremotepython3deps"><code>fullPluginRegistry.&lt;name&gt;.remote.python3Deps</code></a></h3>
-<div class="option_description">
-<p>A function that takes an attribute set of Python 3 packages (typically passed
-from nixpkgs) and returns a list of Python 3 packages that this plugin depends
-on.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> python3 packages in `python3.withPackages` format</p>
-</li>
-<li>
-<p><em>Default:</em> <code>packageSet: []</code></p>
-</li>
-<li>
-<p><em>Example:</em></p>
-<pre><code class="language-nix">(packageSet: with packageSet: [ python-language-server ])
-</code></pre>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynamertp" id="fullpluginregistrynamertp"><code>fullPluginRegistry.&lt;name&gt;.rtp</code></a></h3>
-<div class="option_description">
-<p>Subdirectory of the plugin source that contains the Vim plugin.</p>
-<p>Leave as <code>null</code> to simply use the root of the source.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or string</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynamesource" id="fullpluginregistrynamesource"><code>fullPluginRegistry.&lt;name&gt;.source</code></a></h3>
-<div class="option_description">
-<p>Source of the vim plugin.</p>
-<p>Leave as <code>null</code> to let the module infer the source as a vim-plug shortname from
-the name of this <code>pluginConfig</code> attribute.</p>
-<p>Otherwise, set to a string representing a vim-plug-compatible git repository
-url, an existing vim plugin derivation, or to a Nix store path to build a vim
-plugin derivation from.</p>
-<p>If left null or set to a string, a pin for the source must be present in
-<code>sourcePins</code> in order to build the neovim configuration.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or package or string or path</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#fullpluginregistrynametag" id="fullpluginregistrynametag"><code>fullPluginRegistry.&lt;name&gt;.tag</code></a></h3>
-<div class="option_description">
-<p>Tag of the git source to fetch and use. The <code>commit</code> option effectively
-overrides this.</p>
-<p>Leave as <code>null</code> to simply use the <code>HEAD</code>.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or string</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3><a class="header" href="#mergeplugins" id="mergeplugins"><code>mergePlugins</code></a></h3>
+<h3 id="mergeplugins"><a class="header" href="#mergeplugins"><code>mergePlugins</code></a></h3>
 <div class="option_description">
 <p>Whether or not to collect plugins into &quot;buckets&quot; based upon their position in
 the load order, and then merge those which can be merged, in order to minimise
@@ -804,7 +400,7 @@ the number of directories added to vim's <code>runtimepath</code>, decreasing st
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#neovimpackage" id="neovimpackage"><code>neovimPackage</code></a></h3>
+<h3 id="neovimpackage"><a class="header" href="#neovimpackage"><code>neovimPackage</code></a></h3>
 <div class="option_description">
 <p>The base neovim package to wrap.</p>
 </div>
@@ -820,7 +416,7 @@ the number of directories added to vim's <code>runtimepath</code>, decreasing st
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistry" id="pluginregistry"><code>pluginRegistry</code></a></h3>
+<h3 id="pluginregistry"><a class="header" href="#pluginregistry"><code>pluginRegistry</code></a></h3>
 <div class="option_description">
 <p>An attribute set describing the available/known neovim plugins.</p>
 </div>
@@ -928,7 +524,7 @@ the number of directories added to vim's <code>runtimepath</code>, decreasing st
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynameenable" id="pluginregistrynameenable"><code>pluginRegistry.&lt;name&gt;.enable</code></a></h3>
+<h3 id="pluginregistrynameenable"><a class="header" href="#pluginregistrynameenable"><code>pluginRegistry.&lt;name&gt;.enable</code></a></h3>
 <div class="option_description">
 <p>Whether or not this neovim plugin should be installed and used.</p>
 </div>
@@ -939,7 +535,7 @@ the number of directories added to vim's <code>runtimepath</code>, decreasing st
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynameafter" id="pluginregistrynameafter"><code>pluginRegistry.&lt;name&gt;.after</code></a></h3>
+<h3 id="pluginregistrynameafter"><a class="header" href="#pluginregistrynameafter"><code>pluginRegistry.&lt;name&gt;.after</code></a></h3>
 <div class="option_description">
 <p>List of other vim plugins that this plugin should be loaded <em>after</em>.</p>
 <p>This can be seen as a &quot;soft&quot; form of making each of the listed plugins
@@ -959,7 +555,7 @@ urls, or base <code>vimPlugins</code> attribute names.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynamebefore" id="pluginregistrynamebefore"><code>pluginRegistry.&lt;name&gt;.before</code></a></h3>
+<h3 id="pluginregistrynamebefore"><a class="header" href="#pluginregistrynamebefore"><code>pluginRegistry.&lt;name&gt;.before</code></a></h3>
 <div class="option_description">
 <p>List of other vim plugins that this plugin should be loaded <em>before</em>.</p>
 <p>This can be seen as a &quot;soft&quot; form of making this plugin a dependency of each of
@@ -979,7 +575,7 @@ urls, or base <code>vimPlugins</code> attribute names.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynamebindeps" id="pluginregistrynamebindeps"><code>pluginRegistry.&lt;name&gt;.binDeps</code></a></h3>
+<h3 id="pluginregistrynamebindeps"><a class="header" href="#pluginregistrynamebindeps"><code>pluginRegistry.&lt;name&gt;.binDeps</code></a></h3>
 <div class="option_description">
 <p>A list of derivations containing executables that need to be available in the
 <code>$PATH</code> of the neovim process for this plugin to use.</p>
@@ -996,7 +592,7 @@ urls, or base <code>vimPlugins</code> attribute names.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynamebranch" id="pluginregistrynamebranch"><code>pluginRegistry.&lt;name&gt;.branch</code></a></h3>
+<h3 id="pluginregistrynamebranch"><a class="header" href="#pluginregistrynamebranch"><code>pluginRegistry.&lt;name&gt;.branch</code></a></h3>
 <div class="option_description">
 <p>Branch of the git source to fetch and use. The <code>tag</code> and <code>commit</code> options
 effectively override this.</p>
@@ -1014,7 +610,7 @@ effectively override this.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynamecommit" id="pluginregistrynamecommit"><code>pluginRegistry.&lt;name&gt;.commit</code></a></h3>
+<h3 id="pluginregistrynamecommit"><a class="header" href="#pluginregistrynamecommit"><code>pluginRegistry.&lt;name&gt;.commit</code></a></h3>
 <div class="option_description">
 <p>Commit of the git source to fetch and use.</p>
 <p>Leave as <code>null</code> to simply use the <code>HEAD</code>.</p>
@@ -1031,7 +627,7 @@ effectively override this.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynamedependencies" id="pluginregistrynamedependencies"><code>pluginRegistry.&lt;name&gt;.dependencies</code></a></h3>
+<h3 id="pluginregistrynamedependencies"><a class="header" href="#pluginregistrynamedependencies"><code>pluginRegistry.&lt;name&gt;.dependencies</code></a></h3>
 <div class="option_description">
 <p>List of other vim plugins that are dependencies of this plugin.</p>
 <p>Items can be either strings representings vim-plug-compatible git repository
@@ -1049,7 +645,7 @@ urls, base <code>vimPlugins</code> attribute names, or existing vim plugin deriv
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynamedir" id="pluginregistrynamedir"><code>pluginRegistry.&lt;name&gt;.dir</code></a></h3>
+<h3 id="pluginregistrynamedir"><a class="header" href="#pluginregistrynamedir"><code>pluginRegistry.&lt;name&gt;.dir</code></a></h3>
 <div class="option_description">
 <p>If set, specifies a directory path that the plugin should be loaded from at
 neovim run-time, avoiding the use of a Nix-provided plugin directory.</p>
@@ -1072,7 +668,7 @@ escape this to use a relative path, e.g.:</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynamefor" id="pluginregistrynamefor"><code>pluginRegistry.&lt;name&gt;.for</code></a></h3>
+<h3 id="pluginregistrynamefor"><a class="header" href="#pluginregistrynamefor"><code>pluginRegistry.&lt;name&gt;.for</code></a></h3>
 <div class="option_description">
 <p>One or more filetypes that should trigger on-demand loading of this plugin.</p>
 <p>Can be specified with either a single string or list of strings.</p>
@@ -1089,7 +685,7 @@ escape this to use a relative path, e.g.:</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynameluadeps" id="pluginregistrynameluadeps"><code>pluginRegistry.&lt;name&gt;.luaDeps</code></a></h3>
+<h3 id="pluginregistrynameluadeps"><a class="header" href="#pluginregistrynameluadeps"><code>pluginRegistry.&lt;name&gt;.luaDeps</code></a></h3>
 <div class="option_description">
 <p>A function that takes an attribute set of Lua packages (typically passed from
 nixpkgs) and returns a list of Lua packages that this plugin depends on.</p>
@@ -1111,7 +707,7 @@ nixpkgs) and returns a list of Lua packages that this plugin depends on.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynamemergeable" id="pluginregistrynamemergeable"><code>pluginRegistry.&lt;name&gt;.mergeable</code></a></h3>
+<h3 id="pluginregistrynamemergeable"><a class="header" href="#pluginregistrynamemergeable"><code>pluginRegistry.&lt;name&gt;.mergeable</code></a></h3>
 <div class="option_description">
 <p>Whether or not it is safe to merge this plugin with others in the same bucket in
 the load order.</p>
@@ -1128,7 +724,7 @@ the load order.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynamenvimrccondition" id="pluginregistrynamenvimrccondition"><code>pluginRegistry.&lt;name&gt;.nvimrc.condition</code></a></h3>
+<h3 id="pluginregistrynamenvimrccondition"><a class="header" href="#pluginregistrynamenvimrccondition"><code>pluginRegistry.&lt;name&gt;.nvimrc.condition</code></a></h3>
 <div class="option_description">
 <p>A VimL expression that will be evaluated to determine whether or not to execute
 the vim-plug 'Plug' command for this plugin (which will typically load the
@@ -1148,7 +744,7 @@ plugin.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynamenvimrcearly" id="pluginregistrynamenvimrcearly"><code>pluginRegistry.&lt;name&gt;.nvimrc.early</code></a></h3>
+<h3 id="pluginregistrynamenvimrcearly"><a class="header" href="#pluginregistrynamenvimrcearly"><code>pluginRegistry.&lt;name&gt;.nvimrc.early</code></a></h3>
 <div class="option_description">
 <p>Extra lines of <code>init.vim</code> configuration associated with this plugin, that need
 to be as early as possible in the file.</p>
@@ -1166,7 +762,7 @@ to be as early as possible in the file.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynamenvimrcpostplugin" id="pluginregistrynamenvimrcpostplugin"><code>pluginRegistry.&lt;name&gt;.nvimrc.postPlugin</code></a></h3>
+<h3 id="pluginregistrynamenvimrcpostplugin"><a class="header" href="#pluginregistrynamenvimrcpostplugin"><code>pluginRegistry.&lt;name&gt;.nvimrc.postPlugin</code></a></h3>
 <div class="option_description">
 <p>Extra lines of <code>init.vim</code> configuration associated with this plugin, that need
 to be executed after the plugin loading.</p>
@@ -1184,7 +780,7 @@ to be executed after the plugin loading.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynamenvimrcpreplugin" id="pluginregistrynamenvimrcpreplugin"><code>pluginRegistry.&lt;name&gt;.nvimrc.prePlugin</code></a></h3>
+<h3 id="pluginregistrynamenvimrcpreplugin"><a class="header" href="#pluginregistrynamenvimrcpreplugin"><code>pluginRegistry.&lt;name&gt;.nvimrc.prePlugin</code></a></h3>
 <div class="option_description">
 <p>Extra lines of <code>init.vim</code> configuration associated with this plugin, that need
 to be executed before the plugin loading.</p>
@@ -1202,7 +798,7 @@ to be executed before the plugin loading.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynameon" id="pluginregistrynameon"><code>pluginRegistry.&lt;name&gt;.on</code></a></h3>
+<h3 id="pluginregistrynameon"><a class="header" href="#pluginregistrynameon"><code>pluginRegistry.&lt;name&gt;.on</code></a></h3>
 <div class="option_description">
 <p>One or more command or &lt;Plug&gt;-mappings that should trigger on-demand loading
 of this plugin.</p>
@@ -1220,7 +816,7 @@ of this plugin.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynameremotepython2" id="pluginregistrynameremotepython2"><code>pluginRegistry.&lt;name&gt;.remote.python2</code></a></h3>
+<h3 id="pluginregistrynameremotepython2"><a class="header" href="#pluginregistrynameremotepython2"><code>pluginRegistry.&lt;name&gt;.remote.python2</code></a></h3>
 <div class="option_description">
 <p>Whether or not this plugin requires the remote plugin host for Python 2.</p>
 <p>Will effectively be set to true if any Python 2 package dependencies are
@@ -1233,7 +829,7 @@ specified for this plugin.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynameremotepython2deps" id="pluginregistrynameremotepython2deps"><code>pluginRegistry.&lt;name&gt;.remote.python2Deps</code></a></h3>
+<h3 id="pluginregistrynameremotepython2deps"><a class="header" href="#pluginregistrynameremotepython2deps"><code>pluginRegistry.&lt;name&gt;.remote.python2Deps</code></a></h3>
 <div class="option_description">
 <p>A function that takes an attribute set of Python 2 packages (typically passed
 from nixpkgs) and returns a list of Python 2 packages that this plugin depends
@@ -1256,7 +852,7 @@ on.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynameremotepython3" id="pluginregistrynameremotepython3"><code>pluginRegistry.&lt;name&gt;.remote.python3</code></a></h3>
+<h3 id="pluginregistrynameremotepython3"><a class="header" href="#pluginregistrynameremotepython3"><code>pluginRegistry.&lt;name&gt;.remote.python3</code></a></h3>
 <div class="option_description">
 <p>Whether or not this plugin requires the remote plugin host for Python 3.</p>
 <p>Will effectively be set to true if any Python 3 package dependencies are
@@ -1269,7 +865,7 @@ specified for this plugin.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynameremotepython3deps" id="pluginregistrynameremotepython3deps"><code>pluginRegistry.&lt;name&gt;.remote.python3Deps</code></a></h3>
+<h3 id="pluginregistrynameremotepython3deps"><a class="header" href="#pluginregistrynameremotepython3deps"><code>pluginRegistry.&lt;name&gt;.remote.python3Deps</code></a></h3>
 <div class="option_description">
 <p>A function that takes an attribute set of Python 3 packages (typically passed
 from nixpkgs) and returns a list of Python 3 packages that this plugin depends
@@ -1292,7 +888,7 @@ on.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynamertp" id="pluginregistrynamertp"><code>pluginRegistry.&lt;name&gt;.rtp</code></a></h3>
+<h3 id="pluginregistrynamertp"><a class="header" href="#pluginregistrynamertp"><code>pluginRegistry.&lt;name&gt;.rtp</code></a></h3>
 <div class="option_description">
 <p>Subdirectory of the plugin source that contains the Vim plugin.</p>
 <p>Leave as <code>null</code> to simply use the root of the source.</p>
@@ -1309,7 +905,7 @@ on.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynamesource" id="pluginregistrynamesource"><code>pluginRegistry.&lt;name&gt;.source</code></a></h3>
+<h3 id="pluginregistrynamesource"><a class="header" href="#pluginregistrynamesource"><code>pluginRegistry.&lt;name&gt;.source</code></a></h3>
 <div class="option_description">
 <p>Source of the vim plugin.</p>
 <p>Leave as <code>null</code> to let the module infer the source as a vim-plug shortname from
@@ -1332,7 +928,7 @@ plugin derivation from.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#pluginregistrynametag" id="pluginregistrynametag"><code>pluginRegistry.&lt;name&gt;.tag</code></a></h3>
+<h3 id="pluginregistrynametag"><a class="header" href="#pluginregistrynametag"><code>pluginRegistry.&lt;name&gt;.tag</code></a></h3>
 <div class="option_description">
 <p>Tag of the git source to fetch and use. The <code>commit</code> option effectively
 overrides this.</p>
@@ -1350,7 +946,7 @@ overrides this.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#postpluginconfig" id="postpluginconfig"><code>postPluginConfig</code></a></h3>
+<h3 id="postpluginconfig"><a class="header" href="#postpluginconfig"><code>postPluginConfig</code></a></h3>
 <div class="option_description">
 <p>Extra lines of <code>init.vim</code> configuration that need to be executed after the
 plugin loading.</p>
@@ -1367,7 +963,7 @@ plugin loading.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#prepluginconfig" id="prepluginconfig"><code>prePluginConfig</code></a></h3>
+<h3 id="prepluginconfig"><a class="header" href="#prepluginconfig"><code>prePluginConfig</code></a></h3>
 <div class="option_description">
 <p>Extra lines of <code>init.vim</code> configuration that need to be executed before the
 plugin loading.</p>
@@ -1384,7 +980,7 @@ plugin loading.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#sourcepins" id="sourcepins"><code>sourcePins</code></a></h3>
+<h3 id="sourcepins"><a class="header" href="#sourcepins"><code>sourcePins</code></a></h3>
 <div class="option_description">
 <p>Attribute set of source pins for vim plugins. Attribute names should map
 directly to <code>pluginRegistry</code> attribute names.</p>
@@ -1401,7 +997,7 @@ directly to <code>pluginRegistry</code> attribute names.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#sourcepinsnamefetchtype" id="sourcepinsnamefetchtype"><code>sourcePins.&lt;name&gt;.fetchType</code></a></h3>
+<h3 id="sourcepinsnamefetchtype"><a class="header" href="#sourcepinsnamefetchtype"><code>sourcePins.&lt;name&gt;.fetchType</code></a></h3>
 <div class="option_description">
 <p>Type of the fetcher to use.</p>
 </div>
@@ -1412,7 +1008,7 @@ directly to <code>pluginRegistry</code> attribute names.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#sourcepinsnamerev" id="sourcepinsnamerev"><code>sourcePins.&lt;name&gt;.rev</code></a></h3>
+<h3 id="sourcepinsnamerev"><a class="header" href="#sourcepinsnamerev"><code>sourcePins.&lt;name&gt;.rev</code></a></h3>
 <div class="option_description">
 <p><code>pkgs.fetchgit-compatible</code> git revision string.</p>
 </div>
@@ -1423,7 +1019,7 @@ directly to <code>pluginRegistry</code> attribute names.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#sourcepinsnamesha256" id="sourcepinsnamesha256"><code>sourcePins.&lt;name&gt;.sha256</code></a></h3>
+<h3 id="sourcepinsnamesha256"><a class="header" href="#sourcepinsnamesha256"><code>sourcePins.&lt;name&gt;.sha256</code></a></h3>
 <div class="option_description">
 <p><code>pkgs.fetchgit-compatible</code> sha256 string.</p>
 </div>
@@ -1434,7 +1030,7 @@ directly to <code>pluginRegistry</code> attribute names.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#sourcepinsnameurl" id="sourcepinsnameurl"><code>sourcePins.&lt;name&gt;.url</code></a></h3>
+<h3 id="sourcepinsnameurl"><a class="header" href="#sourcepinsnameurl"><code>sourcePins.&lt;name&gt;.url</code></a></h3>
 <div class="option_description">
 <p><code>pkgs.fetchgit-compatible</code> git url string.</p>
 </div>
@@ -1445,7 +1041,7 @@ directly to <code>pluginRegistry</code> attribute names.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#sourcepinsnameversion" id="sourcepinsnameversion"><code>sourcePins.&lt;name&gt;.version</code></a></h3>
+<h3 id="sourcepinsnameversion"><a class="header" href="#sourcepinsnameversion"><code>sourcePins.&lt;name&gt;.version</code></a></h3>
 <div class="option_description">
 <p>Version string appropriate for a nixpkgs derivation.</p>
 </div>
@@ -1456,7 +1052,7 @@ directly to <code>pluginRegistry</code> attribute names.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#withpython2" id="withpython2"><code>withPython2</code></a></h3>
+<h3 id="withpython2"><a class="header" href="#withpython2"><code>withPython2</code></a></h3>
 <div class="option_description">
 <p>Enable Python 2 provider. Set to <code>true</code> to use Python 2 plugins.</p>
 </div>
@@ -1467,7 +1063,7 @@ directly to <code>pluginRegistry</code> attribute names.</p>
 </div>
 </div>
 <div class="option">
-<h3><a class="header" href="#withpython3" id="withpython3"><code>withPython3</code></a></h3>
+<h3 id="withpython3"><a class="header" href="#withpython3"><code>withPython3</code></a></h3>
 <div class="option_description">
 <p>Enable Python 3 provider. Set to <code>true</code> to use Python 3 plugins.</p>
 </div>
@@ -1501,13 +1097,13 @@ directly to <code>pluginRegistry</code> attribute names.</p>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a href="chapter_4.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="chapter_4.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a href="tools.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="tools.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 
@@ -1517,6 +1113,14 @@ directly to <code>pluginRegistry</code> attribute names.</p>
 
         
 
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
         
 
         

@@ -11,3 +11,4 @@ build-dir = "../docs"
 [output.html]
 # Bundled a custom highlight.js including Nix highlighting
 theme = "theme"
+cname = "envy.shados.net"
