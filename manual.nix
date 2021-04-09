@@ -1,54 +1,44 @@
+{ sources ? import ./nix/sources.nix }:
 let
-  nixpkgs = builtins.fetchGit {
-    url = https://github.com/NixOS/nixpkgs;
-    ref = "master";
-    rev = "40235b78a201b97eb219d3a3b1c129b7ba5c30a7";
-  };
-  sn-config = builtins.fetchGit {
-    url = https://github.com/Shados/nixos-config;
-    ref = "master";
-    rev = "36fc2cbcaf09643886dd79727f40467e122b112e";
-  };
-in
-{
-  # TODO pin to appropriate checkout?
-  pkgs ? import nixpkgs {
-    overlays = [
-      (import "${sn-config}/overlays/lib/lua-overrides.nix")
-      (import "${sn-config}/bespoke/pkgs/lua-packages/overlay.nix")
+  nur-no-packages = import sources.nur { };
+  pkgs = import sources.nixpkgs {
+    overlays = with nur-no-packages.repos.shados.overlays; [
+      lua-overrides
+      lua-packages
     ];
-  }
-}:
-with pkgs;
-with pkgs.lib;
+  };
+  inherit (pkgs) lib;
+in
 let
   nvModule = import ./loaded-module.nix { nixpkgs = pkgs; };
-  optionsFile = writeText "nv-options.json" nvModule.lib.optionsJSON;
+  optionsFile = pkgs.writeText "nv-options.json" nvModule.lib.optionsJSON;
   luaDeps = ps: with ps; [ inspect rapidjson lcmark ];
-  luaPkg = luajit.withPackages luaDeps;
+  luaPkg = pkgs.luajit.withPackages luaDeps;
+  luaPkgs = luaPkg.pkgs;
 in
 rec {
-  html = runCommand "manual.html" rec {
-    nativeBuildInputs = with luajitPackages; [
+  manual = pkgs.stdenv.mkDerivation {
+    name = "envy-manual";
+    src = ./.;
+    nativeBuildInputs = with pkgs; [
       gnumake
-      moonscript
+      luaPkgs.moonscript
       mdbook
     ];
-    inherit luaPkg optionsFile;
-  }
-  ''
-    make book
-    cp -r book $out
-  '';
-  shell = let
-    fullDeps = html.nativeBuildInputs
-      ++ (luaDeps luajitPackages);
-  in mkShell {
-    buildInputs = fullDeps;
+    inherit optionsFile;
+    installPhase = ''
+      cp -r docs $out
+    '';
+  };
+  shell = pkgs.mkShell {
+    nativeBuildInputs = manual.nativeBuildInputs ++ [
+      luaPkg
+      pkgs.niv
+    ];
     inherit optionsFile;
     shellHook = ''
-      export LUA_PATH="$NIX_LUA_PATH"
-      export LUA_CPATH="$NIX_LUA_CPATH"
+      export LUA_PATH="${luaPkgs.getLuaPath luaPkg}"
+      export LUA_CPATH="${luaPkgs.getLuaCPath luaPkg}"
     '';
   };
 }
