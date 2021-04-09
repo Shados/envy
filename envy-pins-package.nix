@@ -5,7 +5,7 @@ runCommand "envy-pins" {
   preferLocalBuild = true;
   src = builtins.filterSource
     (path: type:
-       builtins.elem (baseNameOf path) [ "envy-pins" "config-nvim-builder.moon" ]
+       builtins.elem (baseNameOf path) [ "envy-pins" ]
     || lib.hasSuffix ".nix" path)
     ./.;
 } ''

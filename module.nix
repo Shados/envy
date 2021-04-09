@@ -76,16 +76,7 @@ let
     # with collections.
     luaDeps = ps: with ps; [ inspect luafilesystem rapidjson ];
     luaPkg = pkgs.luajit.withPackages luaDeps;
-    luaBuilder = pkgs.runCommand "config-nvim-builder.lua"
-      {
-        script = ./config-nvim-builder.moon;
-        buildInputs = [
-          pkgs.luajitPackages.moonscript
-        ];
-      }
-      ''
-        moonc -o "$out" "$script"
-      '';
+    luaBuilder = ./config-nvim-builder.lua;
   in ''
     ${luaPkg}/bin/lua ${luaBuilder} ${filesJson} $out
   '');

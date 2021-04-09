@@ -11,7 +11,7 @@ MANUAL_SRC_FILES=$(wildcard $(MANUAL_SRC)/*.md)
 
 .PHONY: all clean book book-watch
 
-all: book
+all: book config-nvim-builder.lua
 
 clean:
 	cd $(MANUAL_DIR) && \
@@ -35,3 +35,6 @@ options.sha256: FORCE
 	@$(if $(filter-out $(shell cat $@ 2>/dev/null),$(shell sha256sum $(optionsFile))),sha256sum $(optionsFile) > $@)
 
 FORCE:
+
+config-nvim-builder.lua: config-nvim-builder.moon
+	moonc -o $@ $<
