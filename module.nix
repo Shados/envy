@@ -9,17 +9,42 @@
 #   using '.' in attribute names), but the existing vimPlugins attribute set
 #   doesn't match the camelCase naming convention to begin with.
 
-# General TODO list:
-# - Option to wrap per-plugin sections in individually named folds?
-
 # We want to work as both a stand-alone module and a submodule, but submodules
 # only get {config, lib, options} as arguments, so we have to wrap in another
 # function to get pkgs
 pkgs:
 { config, lib, options, ... }:
-with lib;
 let
+  inherit (lib) all any attrNames attrValues concatLists concatMap concatMapStringsSep concatStringsSep elem filter filterAttrs flatten foldl' foldr getValues hasAttr hasPrefix isDerivation isFunction isList isString last length literalExample mapAttrs mapAttrsToList mkDefault mkIf mkOption mkOptionType nameValuePair optionalAttrs optionalString replaceChars singleton splitString types;
   nvimLib = import ./lib.nix { nixpkgs = pkgs; };
+
+  initVimConfig = ''
+    scriptencoding 'utf-8'
+    ${pluginHostConfig}
+  '' + optionalString (config.files != {}) ''
+    set runtimepath+=${localNvimFiles}
+  '' + ''
+    luafile ${luaSetup}
+    ${perPlugin.pluginRtpConfig}
+    filetype indent plugin on | syn on
+    ${perPlugin.extraConfig}
+    ${config.extraConfig}
+  '';
+
+  # This is used for declaratively generating the remote plugins manifest, so
+  # it only really needs to ensure that remote plugins are loaded
+  pluginOnlyConfig = ''
+    scriptencoding 'utf-8'
+    ${pluginHostConfig}
+    luafile ${luaSetup}
+    ${perPlugin.remotePluginRtpConfig}
+
+    filetype indent plugin on | syn on
+  '';
+
+  # TODO embed with readFile and lua << EOF instead of using luafile?
+  luaSetup = ./lua/vimrc-setup.lua;
+
   pluginHostConfig = ''
     " We set 'loaded_' variables for plugin hosts not provided by the module in
     " order to avoid expensive (and impure) dynamic searching for them
@@ -30,37 +55,7 @@ let
     let g:loaded_ruby_provider=1
   '';
 
-  initVimConfig = ''
-    scriptencoding 'utf-8'
-    ${config.earlyConfig}
-    ${perPlugin.earlyConfig}
-    ${pluginHostConfig}
-
-    ${config.prePluginConfig}
-    ${perPlugin.prePluginConfig}
-  '' + optionalString (config.files != {}) ''
-    " Direct modifications to rtp should be done prior to the plug#begin() call
-    set runtimepath+=${localNvimFiles}
-  '' + ''
-    ${perPlugin.pluginLoaderConfig}
-    ${perPlugin.postPluginConfig}
-    ${config.postPluginConfig}
-
-    filetype indent plugin on | syn on
-
-    ${config.extraConfig}
-  '';
-
-  # This is used for declaratively generating the remote plugins manifest, so
-  # it only really needs to ensure that remote plugins are loaded
-  pluginOnlyConfig = ''
-    scriptencoding 'utf-8'
-    ${pluginHostConfig}
-    ${perPlugin.barePluginLoaderConfig}
-
-    filetype indent plugin on | syn on
-  '';
-
+  # FIXME merge this into the manual plugin management
   # localNvimFiles: A symlink tree of the configured extra nvim runtime files {{{
   localNvimFiles = pkgs.runCommand "config-nvim" {} (let
     filesJson = let
@@ -75,6 +70,7 @@ let
     # doing this in bash would be less nice, jq isn't that great for working
     # with collections.
     luaDeps = ps: with ps; [ inspect luafilesystem rapidjson ];
+    # TODO change this when adding an option to configure the lua package used for neovim?
     luaPkg = pkgs.luajit.withPackages luaDeps;
     luaBuilder = ./lua/config-nvim-builder.lua;
   in ''
@@ -93,7 +89,7 @@ let
            !plugin.mergeable
         || strListSet plugin.on
         || strListSet plugin.for
-        || plugin.nvimrc.condition != null
+        || plugin.condition != null
         || plugin.pluginType == "local"
       );
       # strListSet :: Either String [String] -> Bool
@@ -125,7 +121,7 @@ let
       in drv // {
         rtp = "${drv}/";
         pluginType = "source";
-        nvimrc.condition = null;
+        condition = null;
         # Needed for rplugin generation
         remote = {
           python2 = any (p: p.remote.python2) mergeablePlugins;
@@ -210,64 +206,58 @@ let
 
   # perPlugin: Various lists of per-plugin init.vim lines {{{
   perPlugin = let
-    pluginLoaderSection = plugLines: ''
-      source ${config.baseVimPlugins.vim-plug.rtp}/plug.vim
-      call plug#begin('/dev/null')
-      ${concatMapStringsSep "\n" (plugLine: "  ${plugLine}") plugLines}
-      call plug#end()
-    '';
-    fullPlugCmd = plugin: options: "${basePlugCmd plugin}, ${formattedPlugOptions options}";
-    basePlugCmd = plugin: "Plug '${if isLocal plugin then plugin.dir else plugin.rtp}'";
-    formattedPlugOptions = options: "{${concatStringsSep ", " (mapAttrsToList (n: v: "'${n}': ${formatPlugOption n v}") options)}}";
-
-    formatPlugOption = n: v:
-           if n == "frozen" then toString v
-      else if n == "for"    then vimStringList v
-      else if n == "on"     then vimStringList v
-      else assert false; null;
     vimStringList = plugOpt:
            if builtins.typeOf plugOpt == "string"  then vimString plugOpt
       else if builtins.typeOf plugOpt == "list"    then "[${concatMapStringsSep ", " (vimString) plugOpt}]"
       else assert false; null;
     vimString = s: assert builtins.typeOf s == "string"; "'${s}'";
-    # Filter out non-vim-plug options, and defaulted values (null and empty-list)
-    filterPlugOpts = n: v: elem n vimPlugAttrs && v != null && (builtins.typeOf v != "list" || length v > 0);
-    plugOptions = plugin: optionalAttrs (!isLocal plugin) { frozen = 1; } // (filterAttrs (filterPlugOpts) plugin);
     isLocal = plugin: plugin.pluginType == "local";
-
-    perPluginConfigFor = section: plugins: let
-      matchingPlugins = filter (plugin: plugin.nvimrc.${section} != null) plugins;
-    in concatMapStringsSep "\n\n" (plugin: plugin.nvimrc.${section}) matchingPlugins;
-
     plugList = if config.mergePlugins then flatten mergedBuckets else sortedPlugins;
+    plugPath = plugin: if isLocal plugin then plugin.dir else plugin.rtp;
+    # TODO escape the plugPath properly
+    escapePlugPath = path: "'${path}'";
+    addToBeforeRtp = plugin: "let g:before_rtp = g:before_rtp.','.${escapePlugPath (plugPath plugin)}";
+    addToAfterRtp = plugin: "let g:after_rtp = g:after_rtp.','.${escapePlugPath ("${plugPath plugin}/after")}";
+    rtpForPlugins = plugins: ''
+        let g:before_rtp = '''
+        let g:after_rtp = '''
+      ''
+      + concatMapStringsSep "\n" (rtpLineForPlugin addToBeforeRtp) plugins + "\n"
+      + concatMapStringsSep "\n" (rtpLineForPlugin addToAfterRtp) (afterPluginsFor plugins) + "\n"
+      + ''
+        let &runtimepath = g:envy_rtp_first
+          \ .g:before_rtp
+          \ .','.g:envy_rtp_middle
+          \ .g:after_rtp
+          \ .','.g:envy_rtp_last
+      '';
+    rtpLineForPlugin = addFunc: plugin: if plugin.condition != null
+      then ''
+        if ${plugin.condition}
+          ${addFunc plugin}
+        endif
+      ''
+      else addFunc plugin;
+
+    afterPluginsFor = plugins: filter maybeHasAfterDir plugins;
+    # We assume the presence of an "after" subdirectory in local plugins, as
+    # they would otherwise need to be checked at runtime, which likely wouldn't
+    # be any faster than just having them in the runtimepath
+    maybeHasAfterDir = plugin: isLocal plugin || (let
+      dirSet = builtins.readDir plugin.rtp;
+    in dirSet ? "after" && dirSet.after == "directory");
   in {
     # Neovim config for loading the plugins
-    # TODO source to user .vim file at configurable path for run-time vim-plug
-    # plugin loading? can't have multiple plug#begin/end blocks -- see
-    # https://github.com/junegunn/vim-plug/issues/615
-    pluginLoaderConfig = let
-      plugLineForPlugin = plugin:
-        if plugin.nvimrc.condition != null
-        then ''
-          if ${plugin.nvimrc.condition}
-            ${fullPlugCmd plugin (plugOptions plugin)}
-          endif
-        ''
-        else fullPlugCmd plugin (plugOptions plugin);
-    in pluginLoaderSection (map (plugLineForPlugin) plugList);
-    barePluginLoaderConfig = let
+    pluginRtpConfig = rtpForPlugins plugList;
+    remotePluginRtpConfig = let
       remotePlugins = filter (plug: any (v: v == true) (attrValues plug.remote)) plugList;
-      barePlugLineForPlugin = plugin: let
-        barePlugOptions = filterAttrs (n: v: !(elem n [ "on" "for" ])) (plugOptions plugin);
-      in fullPlugCmd plugin barePlugOptions;
-    in pluginLoaderSection (map (barePlugLineForPlugin) remotePlugins);
+    in rtpForPlugins remotePlugins;
 
-    # Neovim config fragments for pre- and post-plugin-loading
     # NOTE: We use sortedPlugins instead of plugList here so we don't have to
     # merge these configs in merged plugins
-    prePluginConfig = perPluginConfigFor "prePlugin" sortedPlugins;
-    postPluginConfig = perPluginConfigFor "postPlugin" sortedPlugins;
-    earlyConfig = perPluginConfigFor "early" sortedPlugins;
+    extraConfig = let
+      matchingPlugins = filter (plugin: plugin.extraConfig != null) sortedPlugins;
+    in concatMapStringsSep "\n\n" (plugin: plugin.extraConfig) matchingPlugins;
   };
   # }}}
 
@@ -454,7 +444,7 @@ let
       # Add the rest of the plugin config so we can directly build the vim
       # config from the composed plugins
     } // (filterPluginSpec spec);
-  } // optionalAttrs (spec.rtp != null) { rtpPath = rtp; });
+  } // optionalAttrs (spec.rtp != null) { rtpPath = spec.rtp; });
 
   # filterPluginSpec :: Plugin -> AttrSet
   filterPluginSpec = spec: filterAttrs (n: v: elem n pluginDrvAttrs) spec;
@@ -671,49 +661,28 @@ let
       python3 = mkRemoteHostOption "Python 3";
       python3Deps = mkLangPackagesOption "Python 3" extraPython3PackageType "python-language-server";
     };
-    nvimrc = {
-      condition = mkOption {
-        description = ''
-          A VimL expression that will be evaluated to determine whether or not
-          to execute the vim-plug 'Plug' command for this plugin (which will
-          typically load the plugin, or configure it to be lazily loaded).
+    # TODO test
+    condition = mkOption {
+      description = ''
+        A VimL expression that will be evaluated to determine whether or not
+        to execute the vim-plug 'Plug' command for this plugin (which will
+        typically load the plugin, or configure it to be lazily loaded).
 
-          Leave null in order to unconditionally always run the 'Plug' command
-          for this plugin.
-        '';
-        type = with types; nullOr str;
-        default = null;
-      };
-      early = mkOption {
-        description = ''
-          Extra lines of `init.vim` configuration associated with this plugin,
-          that need to be as early as possible in the file.
+        Leave null in order to unconditionally always run the 'Plug' command
+        for this plugin.
+      '';
+      type = with types; nullOr str;
+      default = null;
+    };
+    extraConfig = mkOption {
+      description = ''
+        Extra lines of `init.vim` configuration associated with this plugin,
+        that need to be executed after the plugin loading.
 
-          Leave null if no such extra configuration is required.
-        '';
-        type = with types; nullOr lines;
-        default = null;
-      };
-      prePlugin = mkOption {
-        description = ''
-          Extra lines of `init.vim` configuration associated with this plugin,
-          that need to be executed before the plugin loading.
-
-          Leave null if no such extra configuration is required.
-        '';
-        type = with types; nullOr lines;
-        default = null;
-      };
-      postPlugin = mkOption {
-        description = ''
-          Extra lines of `init.vim` configuration associated with this plugin,
-          that need to be executed after the plugin loading.
-
-          Leave null if no such extra configuration is required.
-        '';
-        type = with types; nullOr lines;
-        default = null;
-      };
+        Leave null if no such extra configuration is required.
+      '';
+      type = with types; nullOr lines;
+      default = null;
     };
 
     mergeable = mkOption {
@@ -800,6 +769,7 @@ let
       type = with types; nullOr str;
       default = null;
     };
+    # FIXME impl
     on = mkOption {
       description = ''
         One or more command or &lt;Plug&gt;-mappings that should trigger on-demand
@@ -810,6 +780,7 @@ let
       type = with types; either str (listOf str);
       default = [];
     };
+    # FIXME impl
     for = mkOption {
       description = ''
         One or more filetypes that should trigger on-demand loading of this
@@ -842,6 +813,14 @@ in
       default = pkgs.neovim-unwrapped;
       defaultText = "pkgs.neovim-unwrapped";
     };
+    # TODO impl.
+    # initLanguage = mkOption {
+    #   type = with types; enum [ "vimscript" "lua" ]; # TODO MoonScript
+    #   description = ''
+    #     The language used for vimrc/init.vim fragments.
+    #   '';
+    #   default = "vimscript";
+    # };
     # For managing vim plugins and associated init.vim configuration fragments;
     # this option is the primary interface to configure neovim via this module.
     pluginRegistry = mkOption {
@@ -851,6 +830,7 @@ in
       '';
       # Effectively defaulted to defaultPluginRegistry later
       default = {};
+      # TODO: Load this from a CI-tested example file?
       example = literalExample ''
         {
           # A "source" plugin, where the source is inferred from the attribute
@@ -893,7 +873,7 @@ in
             enable = false;
             # Decide whether or not to load at run-time based on the result of
             # a VimL expression
-            nvimrc.condition = "executable('moonc')";
+            condition = "executable('moonc')";
           };
 
           vim-auto-save = {
@@ -983,7 +963,6 @@ in
       '';
     };
 
-
     # For managing non-plugin-related init.vim configuration fragments
     extraConfig = mkOption {
       type = with types; lines;
@@ -991,30 +970,6 @@ in
       description = ''
         Extra lines of `init.vim` configuration to append to the generated
         ones.
-      '';
-    };
-    prePluginConfig = mkOption {
-      type = with types; lines;
-      default = "";
-      description = ''
-        Extra lines of `init.vim` configuration that need to be executed before
-        the plugin loading.
-      '';
-    };
-    earlyConfig = mkOption {
-      type = with types; lines;
-      default = "";
-      description = ''
-        Extra lines of `init.vim` configuration that need to be as early as
-        possible in the file.
-      '';
-    };
-    postPluginConfig = mkOption {
-      type = with types; lines;
-      default = "";
-      description = ''
-        Extra lines of `init.vim` configuration that need to be executed after
-        the plugin loading.
       '';
     };
 
@@ -1051,7 +1006,6 @@ in
         }
       '';
     };
-
 
     # Language-specific package options
     withPython3 = mkOption {
@@ -1285,6 +1239,7 @@ in
     luaModules = concatMap (plugin: singleton plugin.luaDeps) sortedPlugins;
     binDeps = concatMap (plugin: plugin.binDeps) sortedPlugins;
     wrappedNeovim = let
+      # TODO change this when adding an option to configure the lua package used for neovim?
       configureNeovim = pkgs.callPackage ./wrapper.nix { luaPkg = pkgs.luajit; };
     in configureNeovim config.neovimPackage config;
     generatePluginManifest = any (v: v) (map (requiresRemoteHost) [ "python2" "python3" ]);
