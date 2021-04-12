@@ -40,7 +40,6 @@ mkdirp = (base, subpath) ->
     created_subpaths[subpath] = true
 
 ln = (old, new, symlink=false) ->
-  symarg = "-s " if symlink else ""
   print "├── Linking '#{old}' to '#{strip_base new}'"
   wrapped_link old, new, symlink
 

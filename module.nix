@@ -76,7 +76,7 @@ let
     # with collections.
     luaDeps = ps: with ps; [ inspect luafilesystem rapidjson ];
     luaPkg = pkgs.luajit.withPackages luaDeps;
-    luaBuilder = ./config-nvim-builder.lua;
+    luaBuilder = ./lua/config-nvim-builder.lua;
   in ''
     ${luaPkg}/bin/lua ${luaBuilder} ${filesJson} $out
   '');

@@ -56,12 +56,6 @@ ln = function(old, new, symlink)
   if symlink == nil then
     symlink = false
   end
-  local symarg
-  if symlink then
-    symarg = "-s "
-  else
-    local _ = ""
-  end
   print("├── Linking '" .. tostring(old) .. "' to '" .. tostring(strip_base(new)) .. "'")
   return wrapped_link(old, new, symlink)
 end
