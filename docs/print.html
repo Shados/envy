@@ -566,23 +566,6 @@ dependencies against.</p>
 </div>
 </div>
 <div class="option">
-<h3 id="earlyconfig"><a class="header" href="#earlyconfig"><code>earlyConfig</code></a></h3>
-<div class="option_description">
-<p>Extra lines of <code>init.vim</code> configuration that need to be as early as possible in
-the file.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> strings concatenated with &quot;\n&quot;</p>
-</li>
-<li>
-<p><em>Default:</em> <code>&quot;&quot;</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
 <h3 id="extrabinpackages"><a class="header" href="#extrabinpackages"><code>extraBinPackages</code></a></h3>
 <div class="option_description">
 <p>A list of derivations containing executables that need to be available in the
@@ -855,7 +838,7 @@ the number of directories added to vim's <code>runtimepath</code>, decreasing st
     enable = false;
     # Decide whether or not to load at run-time based on the result of
     # a VimL expression
-    nvimrc.condition = &quot;executable('moonc')&quot;;
+    condition = &quot;executable('moonc')&quot;;
   };
 
   vim-auto-save = {
@@ -867,7 +850,7 @@ the number of directories added to vim's <code>runtimepath</code>, decreasing st
   nerdtree = {
     enable = true;
     # Lazily load on command usage
-    on = &quot;NERDTreeToggle&quot;;
+    on_cmd = &quot;NERDTreeToggle&quot;;
     nvimrc.postPlugin = ''
       &quot; Prettify NERDTree
       let NERDTreeMinimalUI = 1
@@ -1011,6 +994,26 @@ effectively override this.</p>
 </div>
 </div>
 <div class="option">
+<h3 id="pluginregistrynamecondition"><a class="header" href="#pluginregistrynamecondition"><code>pluginRegistry.&lt;name&gt;.condition</code></a></h3>
+<div class="option_description">
+<p>A VimL expression that will be evaluated to determine whether or not to execute
+the vim-plug 'Plug' command for this plugin (which will typically load the
+plugin, or configure it to be lazily loaded).</p>
+<p>Leave null in order to unconditionally always run the 'Plug' command for this
+plugin.</p>
+</div>
+<div class="option_properties">
+<ul>
+<li>
+<p><em>Type:</em> null or string</p>
+</li>
+<li>
+<p><em>Default:</em> <code>null</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="option">
 <h3 id="pluginregistrynamedependencies"><a class="header" href="#pluginregistrynamedependencies"><code>pluginRegistry.&lt;name&gt;.dependencies</code></a></h3>
 <div class="option_description">
 <p>List of other vim plugins that are dependencies of this plugin.</p>
@@ -1044,6 +1047,24 @@ escape this to use a relative path, e.g.:</p>
 <ul>
 <li>
 <p><em>Type:</em> null or string</p>
+</li>
+<li>
+<p><em>Default:</em> <code>null</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="option">
+<h3 id="pluginregistrynameextraconfig"><a class="header" href="#pluginregistrynameextraconfig"><code>pluginRegistry.&lt;name&gt;.extraConfig</code></a></h3>
+<div class="option_description">
+<p>Extra lines of <code>init.vim</code> configuration associated with this plugin, that need
+to be executed after the plugin loading.</p>
+<p>Leave null if no such extra configuration is required.</p>
+</div>
+<div class="option_properties">
+<ul>
+<li>
+<p><em>Type:</em> null or strings concatenated with &quot;\n&quot;</p>
 </li>
 <li>
 <p><em>Default:</em> <code>null</code></p>
@@ -1108,84 +1129,27 @@ the load order.</p>
 </div>
 </div>
 <div class="option">
-<h3 id="pluginregistrynamenvimrccondition"><a class="header" href="#pluginregistrynamenvimrccondition"><code>pluginRegistry.&lt;name&gt;.nvimrc.condition</code></a></h3>
+<h3 id="pluginregistrynameon_cmd"><a class="header" href="#pluginregistrynameon_cmd"><code>pluginRegistry.&lt;name&gt;.on_cmd</code></a></h3>
 <div class="option_description">
-<p>A VimL expression that will be evaluated to determine whether or not to execute
-the vim-plug 'Plug' command for this plugin (which will typically load the
-plugin, or configure it to be lazily loaded).</p>
-<p>Leave null in order to unconditionally always run the 'Plug' command for this
+<p>One or more commands that should trigger on-demand loading of this plugin.</p>
+<p>Can be specified with either a single string or list of strings.</p>
+</div>
+<div class="option_properties">
+<ul>
+<li>
+<p><em>Type:</em> string or list of strings</p>
+</li>
+<li>
+<p><em>Default:</em> <code>{}</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="option">
+<h3 id="pluginregistrynameon_map"><a class="header" href="#pluginregistrynameon_map"><code>pluginRegistry.&lt;name&gt;.on_map</code></a></h3>
+<div class="option_description">
+<p>One or more &lt;Plug&gt;-mappings that should trigger on-demand loading of this
 plugin.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or string</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="pluginregistrynamenvimrcearly"><a class="header" href="#pluginregistrynamenvimrcearly"><code>pluginRegistry.&lt;name&gt;.nvimrc.early</code></a></h3>
-<div class="option_description">
-<p>Extra lines of <code>init.vim</code> configuration associated with this plugin, that need
-to be as early as possible in the file.</p>
-<p>Leave null if no such extra configuration is required.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or strings concatenated with &quot;\n&quot;</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="pluginregistrynamenvimrcpostplugin"><a class="header" href="#pluginregistrynamenvimrcpostplugin"><code>pluginRegistry.&lt;name&gt;.nvimrc.postPlugin</code></a></h3>
-<div class="option_description">
-<p>Extra lines of <code>init.vim</code> configuration associated with this plugin, that need
-to be executed after the plugin loading.</p>
-<p>Leave null if no such extra configuration is required.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or strings concatenated with &quot;\n&quot;</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="pluginregistrynamenvimrcpreplugin"><a class="header" href="#pluginregistrynamenvimrcpreplugin"><code>pluginRegistry.&lt;name&gt;.nvimrc.prePlugin</code></a></h3>
-<div class="option_description">
-<p>Extra lines of <code>init.vim</code> configuration associated with this plugin, that need
-to be executed before the plugin loading.</p>
-<p>Leave null if no such extra configuration is required.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or strings concatenated with &quot;\n&quot;</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="pluginregistrynameon"><a class="header" href="#pluginregistrynameon"><code>pluginRegistry.&lt;name&gt;.on</code></a></h3>
-<div class="option_description">
-<p>One or more command or &lt;Plug&gt;-mappings that should trigger on-demand loading
-of this plugin.</p>
 <p>Can be specified with either a single string or list of strings.</p>
 </div>
 <div class="option_properties">
@@ -1325,40 +1289,6 @@ overrides this.</p>
 </li>
 <li>
 <p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="postpluginconfig"><a class="header" href="#postpluginconfig"><code>postPluginConfig</code></a></h3>
-<div class="option_description">
-<p>Extra lines of <code>init.vim</code> configuration that need to be executed after the
-plugin loading.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> strings concatenated with &quot;\n&quot;</p>
-</li>
-<li>
-<p><em>Default:</em> <code>&quot;&quot;</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="prepluginconfig"><a class="header" href="#prepluginconfig"><code>prePluginConfig</code></a></h3>
-<div class="option_description">
-<p>Extra lines of <code>init.vim</code> configuration that need to be executed before the
-plugin loading.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> strings concatenated with &quot;\n&quot;</p>
-</li>
-<li>
-<p><em>Default:</em> <code>&quot;&quot;</code></p>
 </li>
 </ul>
 </div>

@@ -24,7 +24,7 @@ let
     );
 
     fullNvimWrapperArgs = baseNvimWrapperArgs ++ [
-      ''--add-flags "--cmd \"source ${cfg.neovimRC}\""''
+      ''--add-flags "--cmd \"luafile ${cfg.neovimRC}\""''
       "--argv0 nvim"
     ]
     ++ optional (cfg.generatePluginManifest)
@@ -81,7 +81,7 @@ let
       # Only display the log on error since it will contain a few normally
       # irrelevant messages.
       if ! $out/bin/nvim \
-        -u ${cfg.pluginOnlyRC} \
+        --cmd "luafile ${cfg.pluginOnlyRC}" \
         -i NONE -n \
         -E -V1rplugins.log -s \
         +UpdateRemotePlugins +quit! > outfile 2>&1; then

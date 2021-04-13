@@ -23,27 +23,6 @@ dependencies against.
 
 <div class="option">
 
-### `earlyConfig`
-
-<div class="option_description">
-
-Extra lines of `init.vim` configuration that need to be as early as possible in
-the file.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* strings concatenated with "\\n"
-
-  - *Default:* `""`
-
-</div>
-
-</div>
-
-<div class="option">
-
 ### `extraBinPackages`
 
 <div class="option_description">
@@ -379,7 +358,7 @@ An attribute set describing the available/known neovim plugins.
         enable = false;
         # Decide whether or not to load at run-time based on the result of
         # a VimL expression
-        nvimrc.condition = "executable('moonc')";
+        condition = "executable('moonc')";
       };
     
       vim-auto-save = {
@@ -391,7 +370,7 @@ An attribute set describing the available/known neovim plugins.
       nerdtree = {
         enable = true;
         # Lazily load on command usage
-        on = "NERDTreeToggle";
+        on_cmd = "NERDTreeToggle";
         nvimrc.postPlugin = ''
           " Prettify NERDTree
           let NERDTreeMinimalUI = 1
@@ -570,6 +549,31 @@ Leave as `null` to simply use the `HEAD`.
 
 <div class="option">
 
+### `pluginRegistry.<name>.condition`
+
+<div class="option_description">
+
+A VimL expression that will be evaluated to determine whether or not to execute
+the vim-plug 'Plug' command for this plugin (which will typically load the
+plugin, or configure it to be lazily loaded).
+
+Leave null in order to unconditionally always run the 'Plug' command for this
+plugin.
+
+</div>
+
+<div class="option_properties">
+
+  - *Type:* null or string
+
+  - *Default:* `null`
+
+</div>
+
+</div>
+
+<div class="option">
+
 ### `pluginRegistry.<name>.dependencies`
 
 <div class="option_description">
@@ -615,6 +619,29 @@ If this is set, `source` will not be used.
 <div class="option_properties">
 
   - *Type:* null or string
+
+  - *Default:* `null`
+
+</div>
+
+</div>
+
+<div class="option">
+
+### `pluginRegistry.<name>.extraConfig`
+
+<div class="option_description">
+
+Extra lines of `init.vim` configuration associated with this plugin, that need
+to be executed after the plugin loading.
+
+Leave null if no such extra configuration is required.
+
+</div>
+
+<div class="option_properties">
+
+  - *Type:* null or strings concatenated with "\\n"
 
   - *Default:* `null`
 
@@ -694,106 +721,34 @@ the load order.
 
 <div class="option">
 
-### `pluginRegistry.<name>.nvimrc.condition`
+### `pluginRegistry.<name>.on_cmd`
 
 <div class="option_description">
 
-A VimL expression that will be evaluated to determine whether or not to execute
-the vim-plug 'Plug' command for this plugin (which will typically load the
-plugin, or configure it to be lazily loaded).
+One or more commands that should trigger on-demand loading of this plugin.
 
-Leave null in order to unconditionally always run the 'Plug' command for this
+Can be specified with either a single string or list of strings.
+
+</div>
+
+<div class="option_properties">
+
+  - *Type:* string or list of strings
+
+  - *Default:* `{}`
+
+</div>
+
+</div>
+
+<div class="option">
+
+### `pluginRegistry.<name>.on_map`
+
+<div class="option_description">
+
+One or more \<Plug\>-mappings that should trigger on-demand loading of this
 plugin.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* null or string
-
-  - *Default:* `null`
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `pluginRegistry.<name>.nvimrc.early`
-
-<div class="option_description">
-
-Extra lines of `init.vim` configuration associated with this plugin, that need
-to be as early as possible in the file.
-
-Leave null if no such extra configuration is required.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* null or strings concatenated with "\\n"
-
-  - *Default:* `null`
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `pluginRegistry.<name>.nvimrc.postPlugin`
-
-<div class="option_description">
-
-Extra lines of `init.vim` configuration associated with this plugin, that need
-to be executed after the plugin loading.
-
-Leave null if no such extra configuration is required.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* null or strings concatenated with "\\n"
-
-  - *Default:* `null`
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `pluginRegistry.<name>.nvimrc.prePlugin`
-
-<div class="option_description">
-
-Extra lines of `init.vim` configuration associated with this plugin, that need
-to be executed before the plugin loading.
-
-Leave null if no such extra configuration is required.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* null or strings concatenated with "\\n"
-
-  - *Default:* `null`
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `pluginRegistry.<name>.on`
-
-<div class="option_description">
-
-One or more command or \<Plug\>-mappings that should trigger on-demand loading
-of this plugin.
 
 Can be specified with either a single string or list of strings.
 
@@ -977,48 +932,6 @@ Leave as `null` to simply use the `HEAD`.
   - *Type:* null or string
 
   - *Default:* `null`
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `postPluginConfig`
-
-<div class="option_description">
-
-Extra lines of `init.vim` configuration that need to be executed after the
-plugin loading.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* strings concatenated with "\\n"
-
-  - *Default:* `""`
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `prePluginConfig`
-
-<div class="option_description">
-
-Extra lines of `init.vim` configuration that need to be executed before the
-plugin loading.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* strings concatenated with "\\n"
-
-  - *Default:* `""`
 
 </div>
 

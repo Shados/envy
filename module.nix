@@ -15,47 +15,47 @@
 pkgs:
 { config, lib, options, ... }:
 let
-  inherit (lib) all any attrNames attrValues concatLists concatMap concatMapStringsSep concatStringsSep elem filter filterAttrs flatten foldl' foldr getValues hasAttr hasPrefix isDerivation isFunction isList isString last length literalExample mapAttrs mapAttrsToList mkDefault mkIf mkOption mkOptionType nameValuePair optionalAttrs optionalString replaceChars singleton splitString types;
+  inherit (lib) all any attrNames attrValues concatLists concatMap concatMapStringsSep concatStringsSep elem escape filter filterAttrs filterAttrsRecursive flatten foldl' foldr getValues hasAttr hasPrefix isDerivation isFunction isList isString last length literalExample mapAttrs mapAttrsToList mkDefault mkIf mkOption mkOptionType nameValuePair optionalAttrs optionalString replaceChars singleton splitString types;
   nvimLib = import ./lib.nix { nixpkgs = pkgs; };
 
-  initVimConfig = ''
-    scriptencoding 'utf-8'
-    ${pluginHostConfig}
-  '' + optionalString (config.files != {}) ''
-    set runtimepath+=${localNvimFiles}
+
+  mkInitScript = isPluginOnly: plugList: ''
+    -- We explicitly set 'loaded_' variables for plugin hosts not provided by
+    -- the module in order to avoid expensive (and impure) dynamic searching
+    -- for them.
+    ${if config.withPython2
+      then ''vim.api.nvim_set_var("python_host_prog", "${config.python2Env}/bin/python")''
+      else ''vim.api.nvim_set_var("loaded_python_provider", "1")''}
+    ${if config.withPython3
+      then ''vim.api.nvim_set_var("python3_host_prog", "${config.python3Env}/bin/python")''
+      else ''vim.api.nvim_set_var("loaded_python3_provider", "1")''}
+    vim.api.nvim_set_var("loaded_pythonx_provider", "1")
+    vim.api.nvim_set_var("loaded_node_provider", "1")
+    vim.api.nvim_set_var("loaded_ruby_provider", "1")
+
+    ${luaSetup}
+  '' + /* FIXME support /after for this too */ optionalString (config.files != {} && !isPluginOnly) ''
+    -- Locally-specified file tree, not a plugin
+    envy.before_rtp = envy.before_rtp .. ',${escapePlugPath localNvimFiles}'
   '' + ''
-    luafile ${luaSetup}
-    ${perPlugin.pluginRtpConfig}
-    filetype indent plugin on | syn on
-    ${perPlugin.extraConfig}
+    ${luaLoadPlugins plugList (!isPluginOnly)}
+
+    vim.api.nvim_command("filetype indent plugin on")
+    vim.api.nvim_command("syn on")
+  '' /* TODO implement language switch */ + optionalString (!isPluginOnly) ''
+    vim.api.nvim_command("source ${vimExtraConfig}")
+  '';
+
+  vimExtraConfig = pkgs.writeText "user-config.vim" ''
+    ${perPluginExtraConfig}
     ${config.extraConfig}
   '';
 
+  initScript = mkInitScript false plugList;
   # This is used for declaratively generating the remote plugins manifest, so
   # it only really needs to ensure that remote plugins are loaded
-  pluginOnlyConfig = ''
-    scriptencoding 'utf-8'
-    ${pluginHostConfig}
-    luafile ${luaSetup}
-    ${perPlugin.remotePluginRtpConfig}
+  pluginOnlyInitScript = mkInitScript true remotePlugList;
 
-    filetype indent plugin on | syn on
-  '';
-
-  # TODO embed with readFile and lua << EOF instead of using luafile?
-  luaSetup = ./lua/vimrc-setup.lua;
-
-  pluginHostConfig = ''
-    " We set 'loaded_' variables for plugin hosts not provided by the module in
-    " order to avoid expensive (and impure) dynamic searching for them
-    ${if config.withPython2 then "let g:python_host_prog='${config.python2Env}/bin/python'" else "let g:loaded_python_provider=1"}
-    ${if config.withPython3 then "let g:python3_host_prog='${config.python3Env}/bin/python'" else "let g:loaded_python3_provider=1"}
-    let g:loaded_pythonx_provider=1
-    let g:loaded_node_provider=1
-    let g:loaded_ruby_provider=1
-  '';
-
-  # FIXME merge this into the manual plugin management
   # localNvimFiles: A symlink tree of the configured extra nvim runtime files {{{
   localNvimFiles = pkgs.runCommand "config-nvim" {} (let
     filesJson = let
@@ -70,13 +70,72 @@ let
     # doing this in bash would be less nice, jq isn't that great for working
     # with collections.
     luaDeps = ps: with ps; [ inspect luafilesystem rapidjson ];
-    # TODO change this when adding an option to configure the lua package used for neovim?
+    # TODO change this when adding an option to configure the lua package used
+    # for neovim? would just be to save on having duplicate Lua's installed in
+    # this case; this one shouldn't particularly be open to customisation
     luaPkg = pkgs.luajit.withPackages luaDeps;
     luaBuilder = ./lua/config-nvim-builder.lua;
   in ''
     ${luaPkg}/bin/lua ${luaBuilder} ${filesJson} $out
   '');
   # }}}
+
+  luaSetup = builtins.readFile ./lua/vimrc-setup.lua;
+
+  luaLoadPlugins = plugList: lazyOk: let
+    # TODO Lua linter/checker pass to catch early errors?
+    luaLoadPluginsSrc =
+      concatMapStringsSep "\n" (rtpLineForPlugin true lazyOk) plugList + "\n"
+    + concatMapStringsSep "\n" (rtpLineForPlugin false lazyOk) (afterPluginsFor plugList) + "\n"
+    + ''
+      envy.set_rtp()
+      envy.setup_lazy_loading()
+    '';
+    rtpLineForPlugin = before: lazyOk: plugin: let
+      on_cmd= ensureList plugin.on_cmd;
+      on_map= ensureList plugin.on_map;
+      for = ensureList plugin.for;
+      plugLines = if !lazyOk || !(strListSet plugin.on_cmd || strListSet plugin.on_map || strListSet plugin.for)
+        # If lazy-loading of plugins isn't OK, or this plugin isn't configured for it
+        then if before
+          then "envy.before_rtp = envy.before_rtp .. ',${escapePlugPath (plugPath plugin)}'"
+          else "envy.after_rtp = envy.after_rtp .. ',${escapePlugPath (plugPath plugin)}/after'"
+        # If lazy-loading is OK and this plugin is configured to be lazily loaded
+        # TODO escape the ft/mapping keys properly
+        else optionalString (strListSet plugin.for) (concatMapStringsSep "\n" (ft: ''
+          table.insert(envy.lazy_filetype_plugins[${toLuaString ft}], '${plugin.rtp}')
+        '') (ensureList plugin.for))
+        + optionalString (strListSet plugin.on_cmd) (concatMapStringsSep "\n" (mapping: ''
+          table.insert(envy.lazy_command_plugins[${toLuaString mapping}], '${plugin.rtp}')
+        '') (ensureList plugin.on_cmd))
+        + optionalString (strListSet plugin.on_map) (concatMapStringsSep "\n" (mapping: ''
+          table.insert(envy.lazy_mapped_plugins[${toLuaString mapping}], '${plugin.rtp}')
+        '') (ensureList plugin.on_map))
+        ;
+    in conditionalWrapper plugLines plugin;
+    conditionalWrapper = lines: plugin: if plugin.condition != null
+      # TODO test for Lua vimrc language
+      # TODO is there a better way for checking vim 'boolean' expression result than checking != 0?
+      then ''
+        if vim.api.nvim_eval(${toLuaString plugin.condition}) ~= 0 then
+          ${lines}
+        end
+      '' else lines;
+    ensureList = maybeList: if isList maybeList then maybeList else singleton maybeList;
+    plugPath = plugin: if isLocal plugin then plugin.dir else plugin.rtp;
+    isLocal = plugin: plugin.pluginType == "local";
+    afterPluginsFor = plugins: filter maybeHasAfterDir plugins;
+    # We assume the presence of an "after" subdirectory in local plugins, as
+    # they would otherwise need to be checked at runtime, which likely wouldn't
+    # be any faster than just having them in the runtimepath
+    maybeHasAfterDir = plugin: isLocal plugin || (let
+      dirSet = builtins.readDir plugin.rtp;
+    in dirSet ? "after" && dirSet.after == "directory");
+  in luaLoadPluginsSrc;
+
+  perPluginExtraConfig = let
+    matchingPlugins = filter (plugin: plugin.extraConfig != null) sortedPlugins;
+  in concatMapStringsSep "\n\n" (plugin: plugin.extraConfig) matchingPlugins;
 
   # mergedBuckets: List of buckets with merged plugin directories (where possible) {{{
   mergedBuckets = let
@@ -87,13 +146,12 @@ let
       isMergeablePlugin = plugin: !(
         # Any of these should prevent a plugin from being merged
            !plugin.mergeable
-        || strListSet plugin.on
+        || strListSet plugin.on_cmd
+        || strListSet plugin.on_map
         || strListSet plugin.for
         || plugin.condition != null
         || plugin.pluginType == "local"
       );
-      # strListSet :: Either String [String] -> Bool
-      strListSet = strList: if isList strList then length strList > 0 else true;
       mergeablePlugins = filter (isMergeablePlugin) bucket;
       # Theoretically, could merge plugins in the same bucket with the same
       # "for", but probably not worthwhile
@@ -121,7 +179,7 @@ let
       in drv // {
         rtp = "${drv}/";
         pluginType = "source";
-        condition = null;
+        condition = null; on_cmd = []; on_map = []; for = [];
         # Needed for rplugin generation
         remote = {
           python2 = any (p: p.remote.python2) mergeablePlugins;
@@ -204,62 +262,8 @@ let
   in fullIndex;
   # }}}
 
-  # perPlugin: Various lists of per-plugin init.vim lines {{{
-  perPlugin = let
-    vimStringList = plugOpt:
-           if builtins.typeOf plugOpt == "string"  then vimString plugOpt
-      else if builtins.typeOf plugOpt == "list"    then "[${concatMapStringsSep ", " (vimString) plugOpt}]"
-      else assert false; null;
-    vimString = s: assert builtins.typeOf s == "string"; "'${s}'";
-    isLocal = plugin: plugin.pluginType == "local";
-    plugList = if config.mergePlugins then flatten mergedBuckets else sortedPlugins;
-    plugPath = plugin: if isLocal plugin then plugin.dir else plugin.rtp;
-    # TODO escape the plugPath properly
-    escapePlugPath = path: "'${path}'";
-    addToBeforeRtp = plugin: "let g:before_rtp = g:before_rtp.','.${escapePlugPath (plugPath plugin)}";
-    addToAfterRtp = plugin: "let g:after_rtp = g:after_rtp.','.${escapePlugPath ("${plugPath plugin}/after")}";
-    rtpForPlugins = plugins: ''
-        let g:before_rtp = '''
-        let g:after_rtp = '''
-      ''
-      + concatMapStringsSep "\n" (rtpLineForPlugin addToBeforeRtp) plugins + "\n"
-      + concatMapStringsSep "\n" (rtpLineForPlugin addToAfterRtp) (afterPluginsFor plugins) + "\n"
-      + ''
-        let &runtimepath = g:envy_rtp_first
-          \ .g:before_rtp
-          \ .','.g:envy_rtp_middle
-          \ .g:after_rtp
-          \ .','.g:envy_rtp_last
-      '';
-    rtpLineForPlugin = addFunc: plugin: if plugin.condition != null
-      then ''
-        if ${plugin.condition}
-          ${addFunc plugin}
-        endif
-      ''
-      else addFunc plugin;
-
-    afterPluginsFor = plugins: filter maybeHasAfterDir plugins;
-    # We assume the presence of an "after" subdirectory in local plugins, as
-    # they would otherwise need to be checked at runtime, which likely wouldn't
-    # be any faster than just having them in the runtimepath
-    maybeHasAfterDir = plugin: isLocal plugin || (let
-      dirSet = builtins.readDir plugin.rtp;
-    in dirSet ? "after" && dirSet.after == "directory");
-  in {
-    # Neovim config for loading the plugins
-    pluginRtpConfig = rtpForPlugins plugList;
-    remotePluginRtpConfig = let
-      remotePlugins = filter (plug: any (v: v == true) (attrValues plug.remote)) plugList;
-    in rtpForPlugins remotePlugins;
-
-    # NOTE: We use sortedPlugins instead of plugList here so we don't have to
-    # merge these configs in merged plugins
-    extraConfig = let
-      matchingPlugins = filter (plugin: plugin.extraConfig != null) sortedPlugins;
-    in concatMapStringsSep "\n\n" (plugin: plugin.extraConfig) matchingPlugins;
-  };
-  # }}}
+  plugList = if config.mergePlugins then flatten mergedBuckets else sortedPlugins;
+  remotePlugList = filter (plug: any (v: v == true) (attrValues plug.remote)) plugList;
 
   # sortedPlugins: List of required plugin drvs sorted into valid loading order
   sortedPlugins = flatten rawPluginBuckets;
@@ -494,6 +498,21 @@ let
     type = with types; bool;
     default = false;
   };
+
+  compileMoon = filename: moontext: pkgs.runCommand "${filename}.lua" {
+    src = pkgs.writeText "${filename}.moon" moontext;
+  } ''
+    ${pkgs.luajitPackages.moonscript}/bin/moonc -o $out $src
+  '';
+
+  # strListSet :: Either String [String] -> Bool
+  strListSet = strList: if isList strList then length strList > 0 else true;
+
+  toLuaString = str: "'${escape [ "'" "\\" ] str}'";
+
+  # FIXME escape the plugPath for real? Pretty sure we need to escape , at a
+  # minimum, maybe also spaces?
+  escapePlugPath = path: path;
   # }}}
 
   # Types / submodules {{{
@@ -661,7 +680,6 @@ let
       python3 = mkRemoteHostOption "Python 3";
       python3Deps = mkLangPackagesOption "Python 3" extraPython3PackageType "python-language-server";
     };
-    # TODO test
     condition = mkOption {
       description = ''
         A VimL expression that will be evaluated to determine whether or not
@@ -769,18 +787,28 @@ let
       type = with types; nullOr str;
       default = null;
     };
-    # FIXME impl
-    on = mkOption {
+    on_cmd = mkOption {
       description = ''
-        One or more command or &lt;Plug&gt;-mappings that should trigger on-demand
-        loading of this plugin.
+        One or more commands that should trigger on-demand loading of this
+        plugin.
 
         Can be specified with either a single string or list of strings.
       '';
+      # TODO type-check, must start with uppercase
       type = with types; either str (listOf str);
       default = [];
     };
-    # FIXME impl
+    on_map = mkOption {
+      description = ''
+        One or more &lt;Plug&gt;-mappings that should trigger on-demand loading
+        of this plugin.
+
+        Can be specified with either a single string or list of strings.
+      '';
+      # TODO type-check, must start <Plug>? or elide <Plug>?
+      type = with types; either str (listOf str);
+      default = [];
+    };
     for = mkOption {
       description = ''
         One or more filetypes that should trigger on-demand loading of this
@@ -885,7 +913,7 @@ in
           nerdtree = {
             enable = true;
             # Lazily load on command usage
-            on = "NERDTreeToggle";
+            on_cmd = "NERDTreeToggle";
             nvimrc.postPlugin = '''
               " Prettify NERDTree
               let NERDTreeMinimalUI = 1
@@ -1229,8 +1257,8 @@ in
     pluginRegistry = defaultPluginRegistry;
 
     # Setting read-only options
-    neovimRC = pkgs.writeText "init.vim" initVimConfig;
-    pluginOnlyRC = pkgs.writeText "plugin-only-init.vim" pluginOnlyConfig;
+    neovimRC = pkgs.writeText "init.lua" initScript;
+    pluginOnlyRC = pkgs.writeText "plugin-only-init.lua" pluginOnlyInitScript;
     pluginSourcesJson = pkgs.writeText "nvim-plugin-configs.json" (builtins.toJSON pluginSourceMap);
     requiredPluginsJson = pkgs.writeText "nvim-required-plugins.json" (builtins.toJSON (attrNames requiredPlugins));
     depIndexJson = pkgs.writeText "nvim-dependenxy-index.json" (builtins.toJSON (depIndex));
@@ -1289,7 +1317,6 @@ in
     # Some debuggging outputs
     debug = {
       sortedPluginList = pkgs.writeText "vim-plugin-sorted-list.json" (builtins.toJSON sortedPlugins);
-      pluginOnlyConfigFile = pkgs.writeText "plugin-only-config.json" pluginOnlyConfig;
       inherit localNvimFiles composedRegistry;
       pluginBuckets = pkgs.writeText "buckets.json" (builtins.toJSON rawPluginBuckets);
       mergedPluginBuckets = pkgs.writeText "merged-buckets.json" (builtins.toJSON mergedBuckets);
