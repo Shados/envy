@@ -127,7 +127,7 @@ let
     afterPluginsFor = plugins: filter maybeHasAfterDir plugins;
     # We assume the presence of an "after" subdirectory in local plugins, as
     # they would otherwise need to be checked at runtime, which likely wouldn't
-    # be any faster than just having them in the runtimepath
+    # be any faster than just having them in the runtimepath. TODO?
     maybeHasAfterDir = plugin: isLocal plugin || (let
       dirSet = builtins.readDir plugin.rtp;
     in dirSet ? "after" && dirSet.after == "directory");
@@ -510,9 +510,7 @@ let
 
   toLuaString = str: "'${escape [ "'" "\\" ] str}'";
 
-  # FIXME escape the plugPath for real? Pretty sure we need to escape , at a
-  # minimum, maybe also spaces?
-  escapePlugPath = path: path;
+  escapePlugPath = path: escape [ "," "\\"] path;
   # }}}
 
   # Types / submodules {{{

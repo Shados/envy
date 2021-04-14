@@ -99,9 +99,10 @@ envy.load_plugins = function(plugins, subdirs, before_file, after_file)
   envy.remove_load_triggers(plugins)
   for _index_0 = 1, #plugins do
     local plugin = plugins[_index_0]
-    envy.before_rtp = tostring(envy.before_rtp) .. "," .. tostring(plugin)
+    local rtp_dir = envy.escape_plugin_rtp(plugin)
+    envy.before_rtp = tostring(envy.before_rtp) .. "," .. tostring(rtp_dir)
     if envy.dir_exists(tostring(plugin) .. "/after") then
-      envy.after_rtp = "," .. tostring(plugin) .. "/after" .. tostring(envy.after_rtp)
+      envy.after_rtp = "," .. tostring(rtp_dir) .. "/after" .. tostring(envy.after_rtp)
     end
   end
   envy.set_rtp()
@@ -143,6 +144,9 @@ envy.remove_load_triggers = function(plugins)
     end
     envy.load_triggers[plugin] = nil
   end
+end
+envy.escape_plugin_rtp = function(plugin_rtp_path)
+  return string.gsub(plugin_rtp_path, "([,\\])", "\\%1")
 end
 envy.dir_exists = function(dir)
   return (vim.api.nvim_call_function('isdirectory', {

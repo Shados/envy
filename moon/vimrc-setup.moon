@@ -111,9 +111,10 @@ envy.load_plugins = (plugins, subdirs, before_file, after_file) ->
 
   -- Re-set runtimepath with new plugins included
   for plugin in *plugins
-    envy.before_rtp = "#{envy.before_rtp},#{plugin}"
+    rtp_dir = envy.escape_plugin_rtp plugin
+    envy.before_rtp = "#{envy.before_rtp},#{rtp_dir}"
     if envy.dir_exists "#{plugin}/after"
-      envy.after_rtp = ",#{plugin}/after#{envy.after_rtp}"
+      envy.after_rtp = ",#{rtp_dir}/after#{envy.after_rtp}"
   envy.set_rtp!
 
   -- Directly source & :runtime appropriate files
@@ -136,6 +137,9 @@ envy.remove_load_triggers = (plugins) ->
         vim.api.nvim_del_keymap "", trigger.map
         vim.api.nvim_del_keymap "i", trigger.map
     envy.load_triggers[plugin] = nil
+
+envy.escape_plugin_rtp = (plugin_rtp_path) ->
+  string.gsub plugin_rtp_path, "([,\\])", "\\%1"
 
 envy.dir_exists = (dir) ->
   (vim.api.nvim_call_function 'isdirectory', {dir}) != 0
