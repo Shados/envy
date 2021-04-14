@@ -104,9 +104,9 @@ envy.setup_lazy_loading = ->
 envy.load_on_filetype = (ft) ->
   plugins = envy.lazy_filetype_plugins[ft]
   syntax_path = "syntax/#{ft}.vim"
-  envy.load_plugins plugins, {"plugin", "after/plugin"}, syntax_path, "after/#{syntax_path}"
+  envy.load_plugins plugins, {"plugin"}, {"after/plugin"}, syntax_path, "after/#{syntax_path}"
 
-envy.load_plugins = (plugins, subdirs, before_file, after_file) ->
+envy.load_plugins = (plugins, before_subdirs, after_subdirs, before_file, after_file) ->
   envy.remove_load_triggers plugins
 
   -- Re-set runtimepath with new plugins included
@@ -118,9 +118,14 @@ envy.load_plugins = (plugins, subdirs, before_file, after_file) ->
   envy.set_rtp!
 
   -- Directly source & :runtime appropriate files
-  for plugin in *plugins
-    for dir in *subdirs
+  for dir in *before_subdirs
+    for plugin in *plugins
       envy.source plugin, {"#{dir}/**/*.vim"}
+  for i=#after_subdirs, 1, -1
+    dir = after_subdirs[i]
+    for plugin in *plugins
+      envy.source plugin, {"#{dir}/**/*.vim"}
+  for plugin in *plugins
     if before_file != nil
       if envy.source plugin, {before_file}
         if envy.globpath plugin, after_file
@@ -173,7 +178,7 @@ envy.cmd_proxy = (cmd, bang, range_start, range_end, quoted_args) ->
 
 envy.lazy_load_plugins = (plugins) ->
   -- Load the plugin(s)
-  envy.load_plugins plugins, {'ftdetect', 'after/ftdetect', 'plugin', 'after/plugin'}
+  envy.load_plugins plugins, {'ftdetect', 'plugin'}, {'after/ftdetect', 'after/plugin'}
 
   -- Re-trigger a BufRead event if any ftdetect or ftplugin directories are
   -- present in the plugin(s)

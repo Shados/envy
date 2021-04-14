@@ -91,11 +91,12 @@ envy.load_on_filetype = function(ft)
   local plugins = envy.lazy_filetype_plugins[ft]
   local syntax_path = "syntax/" .. tostring(ft) .. ".vim"
   return envy.load_plugins(plugins, {
-    "plugin",
+    "plugin"
+  }, {
     "after/plugin"
   }, syntax_path, "after/" .. tostring(syntax_path))
 end
-envy.load_plugins = function(plugins, subdirs, before_file, after_file)
+envy.load_plugins = function(plugins, before_subdirs, after_subdirs, before_file, after_file)
   envy.remove_load_triggers(plugins)
   for _index_0 = 1, #plugins do
     local plugin = plugins[_index_0]
@@ -106,14 +107,26 @@ envy.load_plugins = function(plugins, subdirs, before_file, after_file)
     end
   end
   envy.set_rtp()
-  for _index_0 = 1, #plugins do
-    local plugin = plugins[_index_0]
-    for _index_1 = 1, #subdirs do
-      local dir = subdirs[_index_1]
+  for _index_0 = 1, #before_subdirs do
+    local dir = before_subdirs[_index_0]
+    for _index_1 = 1, #plugins do
+      local plugin = plugins[_index_1]
       envy.source(plugin, {
         tostring(dir) .. "/**/*.vim"
       })
     end
+  end
+  for i = #after_subdirs, 1, -1 do
+    local dir = after_subdirs[i]
+    for _index_0 = 1, #plugins do
+      local plugin = plugins[_index_0]
+      envy.source(plugin, {
+        tostring(dir) .. "/**/*.vim"
+      })
+    end
+  end
+  for _index_0 = 1, #plugins do
+    local plugin = plugins[_index_0]
     if before_file ~= nil then
       if envy.source(plugin, {
         before_file
@@ -196,8 +209,9 @@ end
 envy.lazy_load_plugins = function(plugins)
   envy.load_plugins(plugins, {
     'ftdetect',
+    'plugin'
+  }, {
     'after/ftdetect',
-    'plugin',
     'after/plugin'
   })
   for _index_0 = 1, #plugins do
