@@ -423,31 +423,27 @@ the number of directories added to vim's <code>runtimepath</code>, decreasing st
     ];
     # The specific commit to use for the source checkout
     commit = &quot;044f2954a5e49aea8625973de68dda8750f1c42d&quot;;
-    nvimrc = {
-      prePlugin = ''
-        &quot; Customize vim-workspace colours based on gruvbox colours
-        function g:WorkspaceSetCustomColors()
-          highlight WorkspaceBufferCurrentDefault guibg=#a89984 guifg=#282828
-          highlight WorkspaceBufferActiveDefault guibg=#504945 guifg=#a89984
-          highlight WorkspaceBufferHiddenDefault guibg=#3c3836 guifg=#a89984
-          highlight WorkspaceBufferTruncDefault guibg=#3c3836 guifg=#b16286
-          highlight WorkspaceTabCurrentDefault guibg=#689d6a guifg=#282828
-          highlight WorkspaceTabHiddenDefault guibg=#458588 guifg=#282828
-          highlight WorkspaceFillDefault guibg=#3c3836 guifg=#3c3836
-          highlight WorkspaceIconDefault guibg=#3c3836 guifg=#3c3836
-        endfunction
-      '';
-      postPlugin = ''
-        &quot; vim-workspace
-        &quot; Disable lightline's tabline functionality, as it conflicts with this
-        let g:lightline.enable = { 'tabline': 0 }
-        &quot; Prettify
-        let g:workspace_powerline_separators = 1
-        let g:workspace_tab_icon = &quot;\uf00a&quot;
-        let g:workspace_left_trunc_icon = &quot;\uf0a8&quot;
-        let g:workspace_right_trunc_icon = &quot;\uf0a9&quot;
-      '';
-    };
+    extraConfig = ''
+      &quot; Customize vim-workspace colours based on gruvbox colours
+      function g:WorkspaceSetCustomColors()
+        highlight WorkspaceBufferCurrentDefault guibg=#a89984 guifg=#282828
+        highlight WorkspaceBufferActiveDefault guibg=#504945 guifg=#a89984
+        highlight WorkspaceBufferHiddenDefault guibg=#3c3836 guifg=#a89984
+        highlight WorkspaceBufferTruncDefault guibg=#3c3836 guifg=#b16286
+        highlight WorkspaceTabCurrentDefault guibg=#689d6a guifg=#282828
+        highlight WorkspaceTabHiddenDefault guibg=#458588 guifg=#282828
+        highlight WorkspaceFillDefault guibg=#3c3836 guifg=#3c3836
+        highlight WorkspaceIconDefault guibg=#3c3836 guifg=#3c3836
+      endfunction
+      &quot; vim-workspace
+      &quot; Disable lightline's tabline functionality, as it conflicts with this
+      let g:lightline.enable = { 'tabline': 0 }
+      &quot; Prettify
+      let g:workspace_powerline_separators = 1
+      let g:workspace_tab_icon = &quot;\uf00a&quot;
+      let g:workspace_left_trunc_icon = &quot;\uf0a8&quot;
+      let g:workspace_right_trunc_icon = &quot;\uf0a9&quot;
+    '';
   };
 
   &quot;Shados/nvim-moonmaker&quot; = {
@@ -467,7 +463,7 @@ the number of directories added to vim's <code>runtimepath</code>, decreasing st
     enable = true;
     # Lazily load on command usage
     on_cmd = &quot;NERDTreeToggle&quot;;
-    nvimrc.postPlugin = ''
+    extraConfig = ''
       &quot; Prettify NERDTree
       let NERDTreeMinimalUI = 1
       let NERDTreeDirArrows = 1

@@ -327,31 +327,27 @@ An attribute set describing the available/known neovim plugins.
         ];
         # The specific commit to use for the source checkout
         commit = "044f2954a5e49aea8625973de68dda8750f1c42d";
-        nvimrc = {
-          prePlugin = ''
-            " Customize vim-workspace colours based on gruvbox colours
-            function g:WorkspaceSetCustomColors()
-              highlight WorkspaceBufferCurrentDefault guibg=#a89984 guifg=#282828
-              highlight WorkspaceBufferActiveDefault guibg=#504945 guifg=#a89984
-              highlight WorkspaceBufferHiddenDefault guibg=#3c3836 guifg=#a89984
-              highlight WorkspaceBufferTruncDefault guibg=#3c3836 guifg=#b16286
-              highlight WorkspaceTabCurrentDefault guibg=#689d6a guifg=#282828
-              highlight WorkspaceTabHiddenDefault guibg=#458588 guifg=#282828
-              highlight WorkspaceFillDefault guibg=#3c3836 guifg=#3c3836
-              highlight WorkspaceIconDefault guibg=#3c3836 guifg=#3c3836
-            endfunction
-          '';
-          postPlugin = ''
-            " vim-workspace
-            " Disable lightline's tabline functionality, as it conflicts with this
-            let g:lightline.enable = { 'tabline': 0 }
-            " Prettify
-            let g:workspace_powerline_separators = 1
-            let g:workspace_tab_icon = "\uf00a"
-            let g:workspace_left_trunc_icon = "\uf0a8"
-            let g:workspace_right_trunc_icon = "\uf0a9"
-          '';
-        };
+        extraConfig = ''
+          " Customize vim-workspace colours based on gruvbox colours
+          function g:WorkspaceSetCustomColors()
+            highlight WorkspaceBufferCurrentDefault guibg=#a89984 guifg=#282828
+            highlight WorkspaceBufferActiveDefault guibg=#504945 guifg=#a89984
+            highlight WorkspaceBufferHiddenDefault guibg=#3c3836 guifg=#a89984
+            highlight WorkspaceBufferTruncDefault guibg=#3c3836 guifg=#b16286
+            highlight WorkspaceTabCurrentDefault guibg=#689d6a guifg=#282828
+            highlight WorkspaceTabHiddenDefault guibg=#458588 guifg=#282828
+            highlight WorkspaceFillDefault guibg=#3c3836 guifg=#3c3836
+            highlight WorkspaceIconDefault guibg=#3c3836 guifg=#3c3836
+          endfunction
+          " vim-workspace
+          " Disable lightline's tabline functionality, as it conflicts with this
+          let g:lightline.enable = { 'tabline': 0 }
+          " Prettify
+          let g:workspace_powerline_separators = 1
+          let g:workspace_tab_icon = "\uf00a"
+          let g:workspace_left_trunc_icon = "\uf0a8"
+          let g:workspace_right_trunc_icon = "\uf0a9"
+        '';
       };
     
       "Shados/nvim-moonmaker" = {
@@ -371,7 +367,7 @@ An attribute set describing the available/known neovim plugins.
         enable = true;
         # Lazily load on command usage
         on_cmd = "NERDTreeToggle";
-        nvimrc.postPlugin = ''
+        extraConfig = ''
           " Prettify NERDTree
           let NERDTreeMinimalUI = 1
           let NERDTreeDirArrows = 1
