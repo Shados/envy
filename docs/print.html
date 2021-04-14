@@ -566,6 +566,24 @@ dependencies against.</p>
 </div>
 </div>
 <div class="option">
+<h3 id="configlanguage"><a class="header" href="#configlanguage"><code>configLanguage</code></a></h3>
+<div class="option_description">
+<p>The language you wish to use for user-supplied configuration line options
+(<code>extraConfig</code>, <code>prePluginConfig</code>, and <code>pluginRegistry.&lt;plugin&gt;.extraConfig</code>).
+Defaults to &quot;vimscript&quot;, but can also be set to &quot;lua&quot;;.</p>
+</div>
+<div class="option_properties">
+<ul>
+<li>
+<p><em>Type:</em> one of &quot;vimscript&quot;, &quot;lua&quot;</p>
+</li>
+<li>
+<p><em>Default:</em> <code>vimscript</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="option">
 <h3 id="extrabinpackages"><a class="header" href="#extrabinpackages"><code>extraBinPackages</code></a></h3>
 <div class="option_description">
 <p>A list of derivations containing executables that need to be available in the
@@ -592,7 +610,8 @@ neovim.</li>
 <div class="option">
 <h3 id="extraconfig"><a class="header" href="#extraconfig"><code>extraConfig</code></a></h3>
 <div class="option_description">
-<p>Extra lines of <code>init.vim</code> configuration to append to the generated ones.</p>
+<p>Extra lines of <code>init.vim</code> configuration to append to the generated ones,
+immediately following any <code>pluginRegistry.&lt;plugin&gt;.extraConfig</code> config lines.</p>
 </div>
 <div class="option_properties">
 <ul>
@@ -1288,24 +1307,6 @@ overrides this.</p>
 <ul>
 <li>
 <p><em>Type:</em> null or string</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="postpluginconfig"><a class="header" href="#postpluginconfig"><code>postPluginConfig</code></a></h3>
-<div class="option_description">
-<p>Extra lines of <code>init.vim</code> configuration to append to the generated ones,
-immediately following any <code>pluginRegistry.&lt;plugin&gt;.extraConfig</code> config lines.</p>
-<p>Leave null if no such extra configuration is required.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or strings concatenated with &quot;\n&quot;</p>
 </li>
 <li>
 <p><em>Default:</em> <code>null</code></p>

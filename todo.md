@@ -21,7 +21,7 @@
     - [ ] Track and account for outside runtimepath modifications, allowing
       lazy-loading to be compatible with the simultaneous use of some other
       plugin manager
-- [ ] Support pure-Lua nvimrc
+- [x] Support pure-Lua nvimrc
 - [ ] Support MoonScript nvimrc
 - [ ] Support Ruby-based remote plugins?
 - [ ] Support NodeJS-based remote plugins?
@@ -34,3 +34,6 @@
 - [ ] Add a readme; mostly just point to the hosted docs
 - [x] Re-add pre-/post-plugin extraConfig; although this isn't required
   per-plugin, it can be useful overall
+- [ ] Properly hide debug options etc.
+- [ ] Expand the Lua runtime to provide some convenience functions, 0.4/0.5
+  cross-compatibility functions, etc.?

@@ -23,6 +23,28 @@ dependencies against.
 
 <div class="option">
 
+### `configLanguage`
+
+<div class="option_description">
+
+The language you wish to use for user-supplied configuration line options
+(`extraConfig`, `prePluginConfig`, and `pluginRegistry.<plugin>.extraConfig`).
+Defaults to "vimscript", but can also be set to "lua";.
+
+</div>
+
+<div class="option_properties">
+
+  - *Type:* one of "vimscript", "lua"
+
+  - *Default:* `vimscript`
+
+</div>
+
+</div>
+
+<div class="option">
+
 ### `extraBinPackages`
 
 <div class="option_description">
@@ -55,7 +77,8 @@ necessary if you need to make executables available for either:
 
 <div class="option_description">
 
-Extra lines of `init.vim` configuration to append to the generated ones.
+Extra lines of `init.vim` configuration to append to the generated ones,
+immediately following any `pluginRegistry.<plugin>.extraConfig` config lines.
 
 </div>
 
@@ -935,29 +958,6 @@ Leave as `null` to simply use the `HEAD`.
 <div class="option_properties">
 
   - *Type:* null or string
-
-  - *Default:* `null`
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `postPluginConfig`
-
-<div class="option_description">
-
-Extra lines of `init.vim` configuration to append to the generated ones,
-immediately following any `pluginRegistry.<plugin>.extraConfig` config lines.
-
-Leave null if no such extra configuration is required.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* null or strings concatenated with "\\n"
 
   - *Default:* `null`
 

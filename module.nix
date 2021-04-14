@@ -43,19 +43,33 @@ let
     -- User-specified plugin loading
     ${luaLoadPlugins plugList (!isPluginOnly)}
     vim.api.nvim_command("filetype indent plugin on")
-    vim.api.nvim_command("syn on")
+    vim.api.nvim_command("syntax on")
 
     -- User-provided config
   '' /* TODO implement language switch */ + optionalString (!isPluginOnly) ''
-    vim.api.nvim_command("source ${vimExtraConfig}")
+    ${vimUserConfig}
   '';
 
-  vimExtraConfig = pkgs.writeText "user-config.vim" ''
-    ${optionalString (config.prePluginConfig != null) config.prePluginConfig}
-    ${perPluginExtraConfig}
-    ${optionalString (config.postPluginConfig != null) config.postPluginConfig}
-    ${config.extraConfig}
-  '';
+  vimUserConfig = let
+    vimText = ''
+      " Envy: prePluginConfig
+      ${optionalString (config.prePluginConfig != null) config.prePluginConfig}
+      " Envy: per-plugin extraConfig
+      ${perPluginExtraConfig}
+      " Envy: extraConfig
+      ${config.extraConfig}
+    '';
+    luaText = ''
+      -- Envy: prePluginConfig
+      ${optionalString (config.prePluginConfig != null) config.prePluginConfig}
+      -- Envy: per-plugin extraConfig
+      ${perPluginExtraConfig}
+      -- Envy: extraConfig
+      ${config.extraConfig}
+    '';
+  in if config.configLanguage == "vimscript"
+    then ''vim.api.nvim_command("source ${pkgs.writeText "user-config.vim" vimText}")''
+    else luaText;
 
   initScript = mkInitScript false plugList;
   # This is used for declaratively generating the remote plugins manifest, so
@@ -122,10 +136,13 @@ let
       (plugin: !isLocal plugin && hasAfterDir plugin.rtp);
     localPlugList = filter (isLocal) baseList;
 
-    conditionalWrapper = plugin: lines: if plugin.condition != null
-      # TODO test for Lua vimrc language
+    conditionalWrapper = plugin: lines: let
+      condExpr = if config.configLanguage == "vimscript"
+        then "vim.api.nvim_eval(${toLuaString plugin.condition}) ~= 0"
+        else plugin.condition;
+    in if plugin.condition != null
       then ''
-        if vim.api.nvim_eval(${toLuaString plugin.condition}) ~= 0 then
+        if ${condExpr} then
           ${lines}
         end
       '' else lines;
@@ -857,14 +874,6 @@ in
       default = pkgs.neovim-unwrapped;
       defaultText = "pkgs.neovim-unwrapped";
     };
-    # TODO impl.
-    # initLanguage = mkOption {
-    #   type = with types; enum [ "vimscript" "lua" ]; # TODO MoonScript
-    #   description = ''
-    #     The language used for vimrc/init.vim fragments.
-    #   '';
-    #   default = "vimscript";
-    # };
     # For managing vim plugins and associated init.vim configuration fragments;
     # this option is the primary interface to configure neovim via this module.
     pluginRegistry = mkOption {
@@ -1003,30 +1012,33 @@ in
       '';
     };
 
+    # TODO, X->Lua compiler options
+    # TODO, validity check on the produced vimscript/lua file
+    configLanguage = mkOption {
+      type = with types; enum [ "vimscript" "lua" ];
+      default = "vimscript";
+      description = ''
+        The language you wish to use for user-supplied configuration line
+        options (`extraConfig`, `prePluginConfig`, and
+        `pluginRegistry.<plugin>.extraConfig`). Defaults to "vimscript", but
+        can also be set to "lua";.
+      '';
+    };
+
     # For managing non-plugin-related init.vim configuration fragments
     extraConfig = mkOption {
       type = with types; lines;
       default = "";
       description = ''
         Extra lines of `init.vim` configuration to append to the generated
-        ones.
+        ones, immediately following any `pluginRegistry.<plugin>.extraConfig`
+        config lines.
       '';
     };
     prePluginConfig = mkOption {
       description = ''
         Extra lines of `init.vim` configuration to append to the generated
         ones, immediately prior to any `pluginRegistry.<plugin>.extraConfig`
-        config lines.
-
-        Leave null if no such extra configuration is required.
-      '';
-      type = with types; nullOr lines;
-      default = null;
-    };
-    postPluginConfig = mkOption {
-      description = ''
-        Extra lines of `init.vim` configuration to append to the generated
-        ones, immediately following any `pluginRegistry.<plugin>.extraConfig`
         config lines.
 
         Leave null if no such extra configuration is required.
