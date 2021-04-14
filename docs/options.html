@@ -274,8 +274,8 @@ plugin that is <em>not</em> being managed by this module.</p>
 <div class="option">
 <h3 id="files"><a class="header" href="#files"><code>files</code></a></h3>
 <div class="option_description">
-<p>Files and folders to link into a folder in the runtimepath; outside of Nix these
-would typically be locally-managed files in the <code>~/.config/nvim</code> folder.</p>
+<p>Files and folders to link into a folder in the runtimepath; outside of Envy
+these would typically be locally-managed files in the <code>~/.config/nvim</code> folder.</p>
 </div>
 <div class="option_properties">
 <ul>
@@ -691,8 +691,10 @@ to be executed after the plugin loading.</p>
 <div class="option">
 <h3 id="pluginregistrynamefor"><a class="header" href="#pluginregistrynamefor"><code>pluginRegistry.&lt;name&gt;.for</code></a></h3>
 <div class="option_description">
-<p>One or more filetypes that should trigger on-demand loading of this plugin.</p>
+<p>One or more filetypes that should trigger on-demand/lazy loading of this plugin.</p>
 <p>Can be specified with either a single string or list of strings.</p>
+<p>NOTE: Lazy-loading functionality will likely conflict with the use of any
+additional, non-Envy plugin manager.</p>
 </div>
 <div class="option_properties">
 <ul>
@@ -747,8 +749,10 @@ the load order.</p>
 <div class="option">
 <h3 id="pluginregistrynameon_cmd"><a class="header" href="#pluginregistrynameon_cmd"><code>pluginRegistry.&lt;name&gt;.on_cmd</code></a></h3>
 <div class="option_description">
-<p>One or more commands that should trigger on-demand loading of this plugin.</p>
+<p>One or more commands that should trigger on-demand/lazy loading of this plugin.</p>
 <p>Can be specified with either a single string or list of strings.</p>
+<p>NOTE: Lazy-loading functionality will likely conflict with the use of any
+additional, non-Envy plugin manager.</p>
 </div>
 <div class="option_properties">
 <ul>
@@ -764,9 +768,11 @@ the load order.</p>
 <div class="option">
 <h3 id="pluginregistrynameon_map"><a class="header" href="#pluginregistrynameon_map"><code>pluginRegistry.&lt;name&gt;.on_map</code></a></h3>
 <div class="option_description">
-<p>One or more &lt;Plug&gt;-mappings that should trigger on-demand loading of this
+<p>One or more &lt;Plug&gt;-mappings that should trigger on-demand/lazy loading of this
 plugin.</p>
 <p>Can be specified with either a single string or list of strings.</p>
+<p>NOTE: Lazy-loading functionality will likely conflict with the use of any
+additional, non-Envy plugin manager.</p>
 </div>
 <div class="option_properties">
 <ul>
@@ -902,6 +908,42 @@ overrides this.</p>
 <ul>
 <li>
 <p><em>Type:</em> null or string</p>
+</li>
+<li>
+<p><em>Default:</em> <code>null</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="option">
+<h3 id="postpluginconfig"><a class="header" href="#postpluginconfig"><code>postPluginConfig</code></a></h3>
+<div class="option_description">
+<p>Extra lines of <code>init.vim</code> configuration to append to the generated ones,
+immediately following any <code>pluginRegistry.&lt;plugin&gt;.extraConfig</code> config lines.</p>
+<p>Leave null if no such extra configuration is required.</p>
+</div>
+<div class="option_properties">
+<ul>
+<li>
+<p><em>Type:</em> null or strings concatenated with &quot;\n&quot;</p>
+</li>
+<li>
+<p><em>Default:</em> <code>null</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="option">
+<h3 id="prepluginconfig"><a class="header" href="#prepluginconfig"><code>prePluginConfig</code></a></h3>
+<div class="option_description">
+<p>Extra lines of <code>init.vim</code> configuration to append to the generated ones,
+immediately prior to any <code>pluginRegistry.&lt;plugin&gt;.extraConfig</code> config lines.</p>
+<p>Leave null if no such extra configuration is required.</p>
+</div>
+<div class="option_properties">
+<ul>
+<li>
+<p><em>Type:</em> null or strings concatenated with &quot;\n&quot;</p>
 </li>
 <li>
 <p><em>Default:</em> <code>null</code></p>

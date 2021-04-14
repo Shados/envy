@@ -15,7 +15,7 @@
 pkgs:
 { config, lib, options, ... }:
 let
-  inherit (lib) all any attrNames attrValues concatLists concatMap concatMapStringsSep concatStringsSep elem escape filter filterAttrs filterAttrsRecursive flatten foldl' foldr getValues hasAttr hasPrefix isDerivation isFunction isList isString last length literalExample mapAttrs mapAttrsToList mkDefault mkIf mkOption mkOptionType nameValuePair optionalAttrs optionalString replaceChars singleton splitString types;
+  inherit (lib) all any attrNames attrValues concatLists concatMap concatMapStringsSep concatStrings concatStringsSep elem escape filter filterAttrs filterAttrsRecursive flatten flip foldl' foldr getValues hasAttr hasPrefix isDerivation isFunction isList isString last length literalExample mapAttrs mapAttrsToList mkDefault mkIf mkOption mkOptionType nameValuePair optionals optionalAttrs optionalString replaceChars singleton splitString types;
   nvimLib = import ./lib.nix { nixpkgs = pkgs; };
 
 
@@ -33,21 +33,27 @@ let
     vim.api.nvim_set_var("loaded_node_provider", "1")
     vim.api.nvim_set_var("loaded_ruby_provider", "1")
 
+    -- Envy Lua runtime
     ${luaSetup}
-  '' + /* FIXME support /after for this too */ optionalString (config.files != {} && !isPluginOnly) ''
-    -- Locally-specified file tree, not a plugin
-    envy.before_rtp = envy.before_rtp .. ',${escapePlugPath localNvimFiles}'
+  '' + optionalString (config.files != {} && !isPluginOnly) ''
+    -- Locally-specified file tree, not a plugin per se
+    ${addBeforeRtp (toString localNvimFiles)}
+    ${optionalString (hasAfterDir localNvimFiles) (addAfterRtp (toString localNvimFiles))}
   '' + ''
+    -- User-specified plugin loading
     ${luaLoadPlugins plugList (!isPluginOnly)}
-
     vim.api.nvim_command("filetype indent plugin on")
     vim.api.nvim_command("syn on")
+
+    -- User-provided config
   '' /* TODO implement language switch */ + optionalString (!isPluginOnly) ''
     vim.api.nvim_command("source ${vimExtraConfig}")
   '';
 
   vimExtraConfig = pkgs.writeText "user-config.vim" ''
+    ${optionalString (config.prePluginConfig != null) config.prePluginConfig}
     ${perPluginExtraConfig}
+    ${optionalString (config.postPluginConfig != null) config.postPluginConfig}
     ${config.extraConfig}
   '';
 
@@ -83,39 +89,41 @@ let
   luaSetup = builtins.readFile ./lua/vimrc-setup.lua;
 
   luaLoadPlugins = plugList: lazyOk: let
-    # TODO Lua linter/checker pass to catch early errors?
-    luaLoadPluginsSrc =
-      concatMapStringsSep "\n" (rtpLineForPlugin true lazyOk) plugList + "\n"
-    + concatMapStringsSep "\n" (rtpLineForPlugin false lazyOk) (afterPluginsFor plugList) + "\n"
-    + ''
-      envy.set_rtp()
-      envy.setup_lazy_loading()
-    '';
-    rtpLineForPlugin = before: lazyOk: plugin: let
-      on_cmd= ensureList plugin.on_cmd;
-      on_map= ensureList plugin.on_map;
-      for = ensureList plugin.for;
-      plugLines = if !lazyOk || !(strListSet plugin.on_cmd || strListSet plugin.on_map || strListSet plugin.for)
-        # If lazy-loading of plugins isn't OK, or this plugin isn't configured for it
-        then if before
-          then "envy.before_rtp = envy.before_rtp .. ',${escapePlugPath (plugPath plugin)}'"
-          else "envy.after_rtp = envy.after_rtp .. ',${escapePlugPath (plugPath plugin)}/after'"
-        # If lazy-loading is OK and this plugin is configured to be lazily loaded
-        # TODO escape the ft/mapping keys properly
-        else optionalString (strListSet plugin.for) (concatMapStringsSep "\n" (ft: ''
-          table.insert(envy.lazy_filetype_plugins[${toLuaString ft}], '${plugin.rtp}')
-        '') (ensureList plugin.for))
-        + optionalString (strListSet plugin.on_cmd) (concatMapStringsSep "\n" (mapping: ''
-          table.insert(envy.lazy_command_plugins[${toLuaString mapping}], '${plugin.rtp}')
-        '') (ensureList plugin.on_cmd))
-        + optionalString (strListSet plugin.on_map) (concatMapStringsSep "\n" (mapping: ''
-          table.insert(envy.lazy_mapped_plugins[${toLuaString mapping}], '${plugin.rtp}')
-        '') (ensureList plugin.on_map))
-        ;
-    in conditionalWrapper plugLines plugin;
-    conditionalWrapper = lines: plugin: if plugin.condition != null
+    luaLoadPluginsSrc = concatStrings luaLoadPluginsLines;
+    luaLoadPluginsLines =
+      (flip map beforePlugList (plugin: conditionalWrapper plugin "${(addBeforeRtp (plugPath plugin))}\n")) ++
+      (flip map afterPlugList (plugin: conditionalWrapper plugin "${(addAfterRtp (plugPath plugin))}\n")) ++
+      (flip map localPlugList (plugin: conditionalWrapper plugin ''
+        if envy.dir_exists(${toLuaString "${plugPath plugin}/after"}) then
+          ${addAfterRtp (plugPath plugin)}
+        end
+      '')) ++
+      optionals lazyOk (flatten (flip map lazyPlugList (plugin:
+        optionals (strListSet plugin.for) (flip map (ensureList plugin.for) (ft: ''
+          table.insert(envy.lazy_filetype_plugins[${toLuaString ft}], ${toLuaString (plugPath plugin)})
+        '')) ++
+        optionals (strListSet plugin.on_cmd) (flip map (ensureList plugin.on_cmd) (cmd: ''
+          table.insert(envy.lazy_command_plugins[${toLuaString cmd}], ${toLuaString (plugPath plugin)})
+        '')) ++
+        optionals (strListSet plugin.on_map) (flip map (ensureList plugin.on_map) (mapping: ''
+          table.insert(envy.lazy_mapped_plugins[${toLuaString mapping}], ${toLuaString (plugPath plugin)})
+        ''))
+      ))) ++ singleton ''
+        envy.set_rtp()
+        envy.setup_lazy_loading()
+      '';
+
+    baseList = if lazyOk
+      then filter (plug: !(isLazyPlugin plug)) plugList
+      else plugList;
+    lazyPlugList = filter (isLazyPlugin) plugList;
+    beforePlugList = baseList;
+    afterPlugList = flip filter baseList
+      (plugin: !isLocal plugin && hasAfterDir plugin.rtp);
+    localPlugList = filter (isLocal) baseList;
+
+    conditionalWrapper = plugin: lines: if plugin.condition != null
       # TODO test for Lua vimrc language
-      # TODO is there a better way for checking vim 'boolean' expression result than checking != 0?
       then ''
         if vim.api.nvim_eval(${toLuaString plugin.condition}) ~= 0 then
           ${lines}
@@ -124,13 +132,7 @@ let
     ensureList = maybeList: if isList maybeList then maybeList else singleton maybeList;
     plugPath = plugin: if isLocal plugin then plugin.dir else plugin.rtp;
     isLocal = plugin: plugin.pluginType == "local";
-    afterPluginsFor = plugins: filter maybeHasAfterDir plugins;
-    # We assume the presence of an "after" subdirectory in local plugins, as
-    # they would otherwise need to be checked at runtime, which likely wouldn't
-    # be any faster than just having them in the runtimepath. TODO?
-    maybeHasAfterDir = plugin: isLocal plugin || (let
-      dirSet = builtins.readDir plugin.rtp;
-    in dirSet ? "after" && dirSet.after == "directory");
+    isLazyPlugin = plugin: strListSet plugin.for || strListSet plugin.on_cmd || strListSet plugin.on_map;
   in luaLoadPluginsSrc;
 
   perPluginExtraConfig = let
@@ -177,7 +179,7 @@ let
           '';
         };
       in drv // {
-        rtp = "${drv}/";
+        rtp = "${drv}";
         pluginType = "source";
         condition = null; on_cmd = []; on_map = []; for = [];
         # Needed for rplugin generation
@@ -510,7 +512,14 @@ let
 
   toLuaString = str: "'${escape [ "'" "\\" ] str}'";
 
-  escapePlugPath = path: escape [ "," "\\"] path;
+  escapePlugPath = path: escape [ "," "\\" ] path;
+
+  hasAfterDir = path: let
+    dirSet = builtins.readDir path;
+  in (dirSet ? "after" && dirSet.after == "directory");
+
+  addBeforeRtp = path: "envy.before_rtp = envy.before_rtp .. ${toLuaString ",${escapePlugPath (path)}"}";
+  addAfterRtp = path: "envy.after_rtp = ${toLuaString ",${escapePlugPath (path)}/after"} .. envy.after_rtp";
   # }}}
 
   # Types / submodules {{{
@@ -787,10 +796,13 @@ let
     };
     on_cmd = mkOption {
       description = ''
-        One or more commands that should trigger on-demand loading of this
+        One or more commands that should trigger on-demand/lazy loading of this
         plugin.
 
         Can be specified with either a single string or list of strings.
+
+        NOTE: Lazy-loading functionality will likely conflict with the use of
+        any additional, non-Envy plugin manager.
       '';
       # TODO type-check, must start with uppercase
       type = with types; either str (listOf str);
@@ -798,10 +810,13 @@ let
     };
     on_map = mkOption {
       description = ''
-        One or more &lt;Plug&gt;-mappings that should trigger on-demand loading
-        of this plugin.
+        One or more &lt;Plug&gt;-mappings that should trigger on-demand/lazy
+        loading of this plugin.
 
         Can be specified with either a single string or list of strings.
+
+        NOTE: Lazy-loading functionality will likely conflict with the use of
+        any additional, non-Envy plugin manager.
       '';
       # TODO type-check, must start <Plug>? or elide <Plug>?
       type = with types; either str (listOf str);
@@ -809,10 +824,13 @@ let
     };
     for = mkOption {
       description = ''
-        One or more filetypes that should trigger on-demand loading of this
-        plugin.
+        One or more filetypes that should trigger on-demand/lazy loading of
+        this plugin.
 
         Can be specified with either a single string or list of strings.
+
+        NOTE: Lazy-loading functionality will likely conflict with the use of
+        any additional, non-Envy plugin manager.
       '';
       type = with types; either str (listOf str);
       default = [];
@@ -998,6 +1016,28 @@ in
         ones.
       '';
     };
+    prePluginConfig = mkOption {
+      description = ''
+        Extra lines of `init.vim` configuration to append to the generated
+        ones, immediately prior to any `pluginRegistry.<plugin>.extraConfig`
+        config lines.
+
+        Leave null if no such extra configuration is required.
+      '';
+      type = with types; nullOr lines;
+      default = null;
+    };
+    postPluginConfig = mkOption {
+      description = ''
+        Extra lines of `init.vim` configuration to append to the generated
+        ones, immediately following any `pluginRegistry.<plugin>.extraConfig`
+        config lines.
+
+        Leave null if no such extra configuration is required.
+      '';
+      type = with types; nullOr lines;
+      default = null;
+    };
 
     # For managing what would typically be locally managed folders and files in
     # the .config/nvim folder; these options essentially create a vim vim
@@ -1010,7 +1050,7 @@ in
       default = {};
       description = ''
         Files and folders to link into a folder in the runtimepath; outside of
-        Nix these would typically be locally-managed files in the
+        Envy these would typically be locally-managed files in the
         `~/.config/nvim` folder.
       '';
       example = literalExample ''

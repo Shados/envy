@@ -137,8 +137,8 @@ plugin that is *not* being managed by this module.
 
 <div class="option_description">
 
-Files and folders to link into a folder in the runtimepath; outside of Nix these
-would typically be locally-managed files in the `~/.config/nvim` folder.
+Files and folders to link into a folder in the runtimepath; outside of Envy
+these would typically be locally-managed files in the `~/.config/nvim` folder.
 
 </div>
 
@@ -655,9 +655,12 @@ Leave null if no such extra configuration is required.
 
 <div class="option_description">
 
-One or more filetypes that should trigger on-demand loading of this plugin.
+One or more filetypes that should trigger on-demand/lazy loading of this plugin.
 
 Can be specified with either a single string or list of strings.
+
+NOTE: Lazy-loading functionality will likely conflict with the use of any
+additional, non-Envy plugin manager.
 
 </div>
 
@@ -725,9 +728,12 @@ the load order.
 
 <div class="option_description">
 
-One or more commands that should trigger on-demand loading of this plugin.
+One or more commands that should trigger on-demand/lazy loading of this plugin.
 
 Can be specified with either a single string or list of strings.
+
+NOTE: Lazy-loading functionality will likely conflict with the use of any
+additional, non-Envy plugin manager.
 
 </div>
 
@@ -747,10 +753,13 @@ Can be specified with either a single string or list of strings.
 
 <div class="option_description">
 
-One or more \<Plug\>-mappings that should trigger on-demand loading of this
+One or more \<Plug\>-mappings that should trigger on-demand/lazy loading of this
 plugin.
 
 Can be specified with either a single string or list of strings.
+
+NOTE: Lazy-loading functionality will likely conflict with the use of any
+additional, non-Envy plugin manager.
 
 </div>
 
@@ -930,6 +939,52 @@ Leave as `null` to simply use the `HEAD`.
 <div class="option_properties">
 
   - *Type:* null or string
+
+  - *Default:* `null`
+
+</div>
+
+</div>
+
+<div class="option">
+
+### `postPluginConfig`
+
+<div class="option_description">
+
+Extra lines of `init.vim` configuration to append to the generated ones,
+immediately following any `pluginRegistry.<plugin>.extraConfig` config lines.
+
+Leave null if no such extra configuration is required.
+
+</div>
+
+<div class="option_properties">
+
+  - *Type:* null or strings concatenated with "\\n"
+
+  - *Default:* `null`
+
+</div>
+
+</div>
+
+<div class="option">
+
+### `prePluginConfig`
+
+<div class="option_description">
+
+Extra lines of `init.vim` configuration to append to the generated ones,
+immediately prior to any `pluginRegistry.<plugin>.extraConfig` config lines.
+
+Leave null if no such extra configuration is required.
+
+</div>
+
+<div class="option_properties">
+
+  - *Type:* null or strings concatenated with "\\n"
 
   - *Default:* `null`
 
