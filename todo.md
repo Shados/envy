@@ -23,6 +23,7 @@
       plugin manager
 - [x] Support pure-Lua nvimrc
 - [ ] Support MoonScript nvimrc
+- [ ] Support Fennel nvimrc, for the hell of it?
 - [ ] Support Ruby-based remote plugins?
 - [ ] Support NodeJS-based remote plugins?
 - [ ] Detect and emit warnings for file collisions in config-nvim-builder

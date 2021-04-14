@@ -67,9 +67,16 @@ let
       -- Envy: extraConfig
       ${config.extraConfig}
     '';
-  in if config.configLanguage == "vimscript"
-    then ''vim.api.nvim_command("source ${pkgs.writeText "user-config.vim" vimText}")''
-    else luaText;
+    langSwitch = {
+      vimscript = ''vim.api.nvim_command("source ${pkgs.writeText "user-config.vim" vimText}")'';
+      lua = luaText;
+      moonscript = compileMoon (luaText +
+        # Suppress a MoonScript-generated return value (it does this due to being an expression-oriented language)
+        ''
+          return
+        '');
+    };
+  in langSwitch.${config.configLanguage};
 
   initScript = mkInitScript false plugList;
   # This is used for declaratively generating the remote plugins manifest, so
@@ -137,15 +144,26 @@ let
     localPlugList = filter (isLocal) baseList;
 
     conditionalWrapper = plugin: lines: let
-      condExpr = if config.configLanguage == "vimscript"
-        then "vim.api.nvim_eval(${toLuaString plugin.condition}) ~= 0"
-        else plugin.condition;
+      condExprs = {
+        vimscript = cond: ''
+          if vim.api.nvim_eval(${toLuaString cond}) ~= 0" then
+            ${lines}
+          end
+        '';
+        lua = cond: ''
+          local cond_expr = function()
+            ${cond}
+          end
+          if cond_expr() then
+            ${lines}
+          end
+        '';
+        # moonc will generate the 'return' for the below function
+        moonscript = cond: condExprs.lua (compileMoon cond);
+      };
     in if plugin.condition != null
-      then ''
-        if ${condExpr} then
-          ${lines}
-        end
-      '' else lines;
+      then condExprs.${config.configLanguage} plugin.condition
+      else lines;
     ensureList = maybeList: if isList maybeList then maybeList else singleton maybeList;
     plugPath = plugin: if isLocal plugin then plugin.dir else plugin.rtp;
     isLocal = plugin: plugin.pluginType == "local";
@@ -518,11 +536,14 @@ let
     default = false;
   };
 
-  compileMoon = filename: moontext: pkgs.runCommand "${filename}.lua" {
-    src = pkgs.writeText "${filename}.moon" moontext;
-  } ''
-    ${pkgs.luajitPackages.moonscript}/bin/moonc -o $out $src
-  '';
+  compileMoon = let
+    moonFile = moontext: pkgs.runCommand "compiled.lua" {
+      preferLocalBuild = true;
+      src = pkgs.writeText "src.moon" moontext;
+    } ''
+      ${pkgs.luajitPackages.moonscript}/bin/moonc -o $out $src
+    '';
+  in t: builtins.readFile (moonFile t);
 
   # strListSet :: Either String [String] -> Bool
   strListSet = strList: if isList strList then length strList > 0 else true;
@@ -1015,13 +1036,12 @@ in
     # TODO, X->Lua compiler options
     # TODO, validity check on the produced vimscript/lua file
     configLanguage = mkOption {
-      type = with types; enum [ "vimscript" "lua" ];
+      type = with types; enum [ "vimscript" "lua" "moonscript" ];
       default = "vimscript";
       description = ''
         The language you wish to use for user-supplied configuration line
         options (`extraConfig`, `prePluginConfig`, and
-        `pluginRegistry.<plugin>.extraConfig`). Defaults to "vimscript", but
-        can also be set to "lua";.
+        `pluginRegistry.<plugin>.extraConfig`).
       '';
     };
 

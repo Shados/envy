@@ -29,13 +29,12 @@ dependencies against.
 
 The language you wish to use for user-supplied configuration line options
 (`extraConfig`, `prePluginConfig`, and `pluginRegistry.<plugin>.extraConfig`).
-Defaults to "vimscript", but can also be set to "lua";.
 
 </div>
 
 <div class="option_properties">
 
-  - *Type:* one of "vimscript", "lua"
+  - *Type:* one of "vimscript", "lua", "moonscript"
 
   - *Default:* `vimscript`
 
