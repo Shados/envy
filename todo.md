@@ -1,6 +1,12 @@
 # To-Do List
 - [x] Pre-build config-nvim-builder.lua from the MoonScript source
 - [ ] Migrate envy-pins to being a real package, poetry-based?
+    - [ ] Make it a separately-installable attribute, to still avoid the
+      install space cost, and document how to run it with `nix run`
+- [ ] Expose as a flake?
+- [ ] Add tests where appropriate
+    - [ ] Include a comprehensive example file in the book, which is itself tested
+    - [ ] CT testin
 - [ ] Collect the hm/nixos/manual/etc. files into attributes off of a single file?
 - [x] Remove reliance on vim-plug by loading plugins ourselves; just *be* the
   plugin manager already \o/
