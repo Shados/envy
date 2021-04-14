@@ -166,7 +166,8 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
-<p>Envy is a framework for Nix/Vim integration, providing:</p>
+<p>Envy is essentially a Nix-based plugin &amp; configuration manager for neovim,
+providing:</p>
 <ul>
 <li><input disabled="" type="checkbox" checked=""/>
 A convenient way to pin and package Vim plugins as Nix derivations.</li>
@@ -186,6 +187,8 @@ A method for existing users of NixOS/home-manager to tightly integrate
 neovim configuration into it, meaning that aspects of their neovim
 configuration can reliably depend upon aspects of their system or user
 configuration.</li>
+<li><input disabled="" type="checkbox" checked=""/>
+A means to specify nvimrc configuration in vimscript, Lua, or MoonScript.</li>
 <li><input disabled="" type="checkbox" checked=""/>
 More complexity than you want or need (probably).</li>
 <li><input disabled="" type="checkbox"/>
@@ -254,6 +257,9 @@ in
 settings from the current system's NixOS configuration should be merged into
 the home-manager defintions. This allows for &quot;layering&quot; user-level neovim
 configuration on top of the system-wide config. It is <code>false</code> by default.</p>
+<p>NOTE: You are likely better off just directly including your NixOS
+envy-configuration module in your hm config, if you want to layer the two, but
+this approach is not always possible/viable.</p>
 <h2 id="standalone-setup"><a class="header" href="#standalone-setup">Standalone Setup</a></h2>
 <p>Usage as a standalone module is slightly more complicated, and is most easily
 done by use of the <code>configuredNeovimModule</code> in Envy's <code>lib</code> module:</p>
@@ -308,25 +314,17 @@ those plugins are enabled and adapt the generated configuration appropriately).<
 <p>Envy provides a wide array of options here, so some examples may be helpful:</p>
 <pre><code class="language-nix">{ config, lib, pkgs, ... }:
 {
-  # Configfuration items that should or must precede everything else, including
-  # per-plugin pre-plugin-load configuration items
-  earlyConfig = ''
+  # Configuration items that should be done prior to any per-plugin configuration
+  prePluginConfig = ''
     let mapleader = &quot;\&lt;Space&gt;&quot;
     augroup vimrc
       autocmd!
     augroup END
-  '';
-  # Configuration items that should be done prior to loading any plugins (but
-  # don't depend on any single plugin); there is also `postPluginConfig` for
-  # configuration items that should be done after loading *all* plugins.
-  prePluginConfig = ''
     set termguicolors
-    syntax enable
   '';
-  # General configuration items that don't have any specific ordering
-  # requirements; these are appended to the generated init.vim file, so you can
-  # use e.g. `lib.mkAfter` if you need something to go at the very end of the
-  # file.
+  # General configuration items that are appended to the end of the generated
+  # vimrc. You can use e.g. `lib.mkAfter` if you need something to go at the
+  # very end of the file.
   extraConfig = ''
     set incsearch
     set hlsearch
@@ -340,10 +338,11 @@ those plugins are enabled and adapt the generated configuration appropriately).<
     set tabstop=2
     set expandtab
 
-    &quot; Use The Silver Searcher (ag) for search backend
-    let g:ackprg = 'ag --nogroup --column'
-    set grepprg:ag\ --nogroup\ --nocolor
-    nnoremap &lt;Leader&gt;o :exe ':silent !xdg-open % &amp;'&lt;CR&gt;
+    &quot; Use Ripgrep (rg) for search backend
+    let g:ackprg = '${pkgs.ripgrep}/bin/rg --vimgrep --smart-case --no-heading --max-filesize=4M'
+    set grepprg:${pkgs.ripgrep}/bin/rg\ --vimgrep\ --smart-case\ --no-heading\ --max-filesize=4M
+
+    nnoremap &lt;Leader&gt;o :exe ':silent !${pkgs.xdg-utils}/bin/xdg-open % &amp;'&lt;CR&gt;
   '';
   # A list of packages whose executables should be added to the $PATH for
   # neovim. These will *only* be added to neovim's path, not to the system or
@@ -470,12 +469,16 @@ if the &quot;dependent&quot; plugin is, e.g.:</p>
   };
 }
 </code></pre>
+<p>It should be noted that lazy-loaded plugins don't fully respect ordering
+options, and don't trigger lazy-loading of dependencies. Either ensure
+dependencies aren't also being lazy-loaded, or put them behind the same
+lazy-load triggers as their dependents.</p>
 <h2 id="plugin-configuration"><a class="header" href="#plugin-configuration">Plugin Configuration</a></h2>
-<p>There are per-plugin versions of the <code>earlyConfig</code>, <code>prePluginConfig</code>, and
-<code>postPluginConfig</code> options under <code>pluginRegistry.&lt;pluginName&gt;.nvimrc</code>, named
-<code>early</code>, <code>prePlugin</code>, and <code>postPlugin</code> respectively. These are inserted into
-the generated neovim <code>init.vim</code> file immediately after or before the generic
-versions.</p>
+<p>There is a per-plugin version of the <code>extraConfig</code> option, under
+<code>pluginRegistry.&lt;pluginName&gt;.extraConfig</code>. These are inserted into the
+generated nvimrc after the <code>prePluginConfig</code>, before the top-level
+<code>extraConfig</code>, and in the same order plugins are loaded (that is, based on
+dependencies and explicit ordering information).</p>
 <h1 id="3-packaging-plugins"><a class="header" href="#3-packaging-plugins">3. Packaging Plugins</a></h1>
 <p>If you are using any plugins whose source is specified by 'shortname', then you
 will need to prefetch those sources, pin the versions, and provide the pinned

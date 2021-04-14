@@ -1041,7 +1041,7 @@ in
       description = ''
         The language you wish to use for user-supplied configuration line
         options (`extraConfig`, `prePluginConfig`, and
-        `pluginRegistry.<plugin>.extraConfig`).
+        `pluginRegistry.<pluginName>.extraConfig`).
       '';
     };
 
@@ -1051,14 +1051,14 @@ in
       default = "";
       description = ''
         Extra lines of `init.vim` configuration to append to the generated
-        ones, immediately following any `pluginRegistry.<plugin>.extraConfig`
+        ones, immediately following any `pluginRegistry.<pluginName>.extraConfig`
         config lines.
       '';
     };
     prePluginConfig = mkOption {
       description = ''
         Extra lines of `init.vim` configuration to append to the generated
-        ones, immediately prior to any `pluginRegistry.<plugin>.extraConfig`
+        ones, immediately prior to any `pluginRegistry.<pluginName>.extraConfig`
         config lines.
 
         Leave null if no such extra configuration is required.

@@ -1,7 +1,7 @@
 ---
-title: 'Nix/Vim Module Manual'
+title: 'Envy Manual'
 author:
 - name: Alexei Robyn
 ...
 
-# Nix/Vim Module Manual
+# Envy Manual

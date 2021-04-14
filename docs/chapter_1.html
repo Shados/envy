@@ -213,6 +213,9 @@ in
 settings from the current system's NixOS configuration should be merged into
 the home-manager defintions. This allows for &quot;layering&quot; user-level neovim
 configuration on top of the system-wide config. It is <code>false</code> by default.</p>
+<p>NOTE: You are likely better off just directly including your NixOS
+envy-configuration module in your hm config, if you want to layer the two, but
+this approach is not always possible/viable.</p>
 <h2 id="standalone-setup"><a class="header" href="#standalone-setup">Standalone Setup</a></h2>
 <p>Usage as a standalone module is slightly more complicated, and is most easily
 done by use of the <code>configuredNeovimModule</code> in Envy's <code>lib</code> module:</p>

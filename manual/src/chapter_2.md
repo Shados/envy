@@ -54,9 +54,14 @@ if the "dependent" plugin is, e.g.:
 {{#include ../embedded/plugin-ordering.nix}}
 ```
 
+It should be noted that lazy-loaded plugins don't fully respect ordering
+options, and don't trigger lazy-loading of dependencies. Either ensure
+dependencies aren't also being lazy-loaded, or put them behind the same
+lazy-load triggers as their dependents.
+
 ## Plugin Configuration
-There are per-plugin versions of the `earlyConfig`, `prePluginConfig`, and
-`postPluginConfig` options under `pluginRegistry.<pluginName>.nvimrc`, named
-`early`, `prePlugin`, and `postPlugin` respectively. These are inserted into
-the generated neovim `init.vim` file immediately after or before the generic
-versions.
+There is a per-plugin version of the `extraConfig` option, under
+`pluginRegistry.<pluginName>.extraConfig`. These are inserted into the
+generated nvimrc after the `prePluginConfig`, before the top-level
+`extraConfig`, and in the same order plugins are loaded (that is, based on
+dependencies and explicit ordering information).

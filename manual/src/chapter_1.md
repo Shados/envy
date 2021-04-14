@@ -58,6 +58,10 @@ settings from the current system's NixOS configuration should be merged into
 the home-manager defintions. This allows for "layering" user-level neovim
 configuration on top of the system-wide config. It is `false` by default.
 
+NOTE: You are likely better off just directly including your NixOS
+envy-configuration module in your hm config, if you want to layer the two, but
+this approach is not always possible/viable.
+
 
 ## Standalone Setup
 Usage as a standalone module is slightly more complicated, and is most easily

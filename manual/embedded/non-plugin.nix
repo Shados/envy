@@ -1,24 +1,16 @@
 { config, lib, pkgs, ... }:
 {
-  # Configfuration items that should or must precede everything else, including
-  # per-plugin pre-plugin-load configuration items
-  earlyConfig = ''
+  # Configuration items that should be done prior to any per-plugin configuration
+  prePluginConfig = ''
     let mapleader = "\<Space>"
     augroup vimrc
       autocmd!
     augroup END
-  '';
-  # Configuration items that should be done prior to loading any plugins (but
-  # don't depend on any single plugin); there is also `postPluginConfig` for
-  # configuration items that should be done after loading *all* plugins.
-  prePluginConfig = ''
     set termguicolors
-    syntax enable
   '';
-  # General configuration items that don't have any specific ordering
-  # requirements; these are appended to the generated init.vim file, so you can
-  # use e.g. `lib.mkAfter` if you need something to go at the very end of the
-  # file.
+  # General configuration items that are appended to the end of the generated
+  # vimrc. You can use e.g. `lib.mkAfter` if you need something to go at the
+  # very end of the file.
   extraConfig = ''
     set incsearch
     set hlsearch
@@ -32,10 +24,11 @@
     set tabstop=2
     set expandtab
 
-    " Use The Silver Searcher (ag) for search backend
-    let g:ackprg = 'ag --nogroup --column'
-    set grepprg:ag\ --nogroup\ --nocolor
-    nnoremap <Leader>o :exe ':silent !xdg-open % &'<CR>
+    " Use Ripgrep (rg) for search backend
+    let g:ackprg = '${pkgs.ripgrep}/bin/rg --vimgrep --smart-case --no-heading --max-filesize=4M'
+    set grepprg:${pkgs.ripgrep}/bin/rg\ --vimgrep\ --smart-case\ --no-heading\ --max-filesize=4M
+
+    nnoremap <Leader>o :exe ':silent !${pkgs.xdg-utils}/bin/xdg-open % &'<CR>
   '';
   # A list of packages whose executables should be added to the $PATH for
   # neovim. These will *only* be added to neovim's path, not to the system or

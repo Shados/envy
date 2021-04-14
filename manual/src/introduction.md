@@ -1,5 +1,6 @@
 # Introduction
-Envy is a framework for Nix/Vim integration, providing:
+Envy is essentially a Nix-based plugin & configuration manager for neovim,
+providing:
 - [x] A convenient way to pin and package Vim plugins as Nix derivations.
 - [x] The ability for Vim plugin derivations to correctly depend on and pull in
   one another, and system dependencies (including plugin-native-language
@@ -13,6 +14,7 @@ Envy is a framework for Nix/Vim integration, providing:
   neovim configuration into it, meaning that aspects of their neovim
   configuration can reliably depend upon aspects of their system or user
   configuration.
+- [x] A means to specify nvimrc configuration in vimscript, Lua, or MoonScript.
 - [x] More complexity than you want or need (probably).
 - [ ] An end to world hunger.
 
