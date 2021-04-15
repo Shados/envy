@@ -28,7 +28,8 @@ dependencies against.
 <div class="option_description">
 
 The language you wish to use for user-supplied configuration line options
-(`extraConfig`, `prePluginConfig`, and `pluginRegistry.<plugin>.extraConfig`).
+(`extraConfig`, `prePluginConfig`, and
+`pluginRegistry.<pluginName>.extraConfig`).
 
 </div>
 
@@ -77,7 +78,8 @@ necessary if you need to make executables available for either:
 <div class="option_description">
 
 Extra lines of `init.vim` configuration to append to the generated ones,
-immediately following any `pluginRegistry.<plugin>.extraConfig` config lines.
+immediately following any `pluginRegistry.<pluginName>.extraConfig` config
+lines.
 
 </div>
 
@@ -971,7 +973,7 @@ Leave as `null` to simply use the `HEAD`.
 <div class="option_description">
 
 Extra lines of `init.vim` configuration to append to the generated ones,
-immediately prior to any `pluginRegistry.<plugin>.extraConfig` config lines.
+immediately prior to any `pluginRegistry.<pluginName>.extraConfig` config lines.
 
 Leave null if no such extra configuration is required.
 

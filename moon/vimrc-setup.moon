@@ -64,6 +64,7 @@ envy.load_triggers = setmetatable {}, envy.automatic_subtables
 envy.set_rtp = ->
   envy.final_rtp = "#{envy.first_rtp}#{envy.before_rtp},#{envy.middle_rtp}#{envy.after_rtp},#{envy.last_rtp}"
   vim.api.nvim_set_option 'runtimepath', envy.final_rtp
+  return
 
 -- Create hooks and proxies to implement the lazy-loading functionlity
 envy.setup_lazy_loading = ->
@@ -100,11 +101,13 @@ envy.setup_lazy_loading = ->
       -- Register the load triggers that were just configured, so they can be
       -- cleanly removed later
       table.insert envy.load_triggers[plugin], {:map}
+  return
 
 envy.load_on_filetype = (ft) ->
   plugins = envy.lazy_filetype_plugins[ft]
   syntax_path = "syntax/#{ft}.vim"
   envy.load_plugins plugins, {"plugin"}, {"after/plugin"}, syntax_path, "after/#{syntax_path}"
+  return
 
 envy.load_plugins = (plugins, before_subdirs, after_subdirs, before_file, after_file) ->
   envy.remove_load_triggers plugins
@@ -132,6 +135,7 @@ envy.load_plugins = (plugins, before_subdirs, after_subdirs, before_file, after_
           vim.api.nvim_command "runtime #{before_file}"
       envy.source plugin, {after_file}
     -- TODO throw a custom 'lazy plugin loaded' autocmd event here?
+  return
 
 envy.remove_load_triggers = (plugins) ->
   for plugin in *plugins
@@ -142,6 +146,7 @@ envy.remove_load_triggers = (plugins) ->
         vim.api.nvim_del_keymap "", trigger.map
         vim.api.nvim_del_keymap "i", trigger.map
     envy.load_triggers[plugin] = nil
+  return
 
 envy.escape_plugin_rtp = (plugin_rtp_path) ->
   string.gsub plugin_rtp_path, "([,\\])", "\\%1"
@@ -175,6 +180,7 @@ envy.cmd_proxy = (cmd, bang, range_start, range_end, quoted_args) ->
     "#{range_start},#{range_end}"
   real_cmd = string.format "%s%s%s %s", prefix, cmd, bang, quoted_args
   vim.api.nvim_command real_cmd
+  return
 
 envy.lazy_load_plugins = (plugins) ->
   -- Load the plugin(s)
@@ -188,6 +194,7 @@ envy.lazy_load_plugins = (plugins) ->
         if (vim.api.nvim_call_function 'exists', {'#BufRead'}) != 0
           vim.api.nvim_command "doautocmd BufRead"
           break
+  return
 
 envy.mapcheck = (map, mode) ->
   args = {map}
@@ -244,3 +251,4 @@ envy.map_proxy = (map, plugins, maybe_with_prefix, key_prefix) ->
   escaped_map = string.gsub map, "^<Plug>", replace, 1
   final_input = "#{escaped_map}#{extra_input}"
   vim.api.nvim_feedkeys final_input, '', true
+  return

@@ -46,7 +46,7 @@ let
     vim.api.nvim_command("syntax on")
 
     -- User-provided config
-  '' /* TODO implement language switch */ + optionalString (!isPluginOnly) ''
+  '' + optionalString (!isPluginOnly) ''
     ${vimUserConfig}
   '';
 
@@ -1341,7 +1341,7 @@ in
 
     lib = {
       inherit (nvimLib) escapedName pinPathFor pinFromPath fillPinsFromDir;
-      inherit buildPluginFromPath;
+      inherit buildPluginFromPath compileMoon;
 
       optionsJSON = let
         # Based on home-manager's manual/options JSON generation, which is

@@ -31,9 +31,8 @@
       look into detecting collisions in module.nix and disabling individual
       plugin merging as a result?
 - [ ] Improve the documentation with comprehensive option examples
-- [ ] Fix old details in the manual
+- [x] Fix old details in the manual
 - [ ] Add a readme; mostly just point to the hosted docs
 - [x] Re-add pre-/post-plugin extraConfig; although this isn't required
   per-plugin, it can be useful overall
-- [ ] Expand the Lua runtime to provide some convenience functions, 0.4/0.5
-  cross-compatibility functions, etc.?
+- [ ] Determine the impact of compileMoon's jankiness on eval times

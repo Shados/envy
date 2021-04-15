@@ -185,7 +185,8 @@ dependencies against.</p>
 <h3 id="configlanguage"><a class="header" href="#configlanguage"><code>configLanguage</code></a></h3>
 <div class="option_description">
 <p>The language you wish to use for user-supplied configuration line options
-(<code>extraConfig</code>, <code>prePluginConfig</code>, and <code>pluginRegistry.&lt;plugin&gt;.extraConfig</code>).</p>
+(<code>extraConfig</code>, <code>prePluginConfig</code>, and
+<code>pluginRegistry.&lt;pluginName&gt;.extraConfig</code>).</p>
 </div>
 <div class="option_properties">
 <ul>
@@ -226,7 +227,8 @@ neovim.</li>
 <h3 id="extraconfig"><a class="header" href="#extraconfig"><code>extraConfig</code></a></h3>
 <div class="option_description">
 <p>Extra lines of <code>init.vim</code> configuration to append to the generated ones,
-immediately following any <code>pluginRegistry.&lt;plugin&gt;.extraConfig</code> config lines.</p>
+immediately following any <code>pluginRegistry.&lt;pluginName&gt;.extraConfig</code> config
+lines.</p>
 </div>
 <div class="option_properties">
 <ul>
@@ -933,7 +935,7 @@ overrides this.</p>
 <h3 id="prepluginconfig"><a class="header" href="#prepluginconfig"><code>prePluginConfig</code></a></h3>
 <div class="option_description">
 <p>Extra lines of <code>init.vim</code> configuration to append to the generated ones,
-immediately prior to any <code>pluginRegistry.&lt;plugin&gt;.extraConfig</code> config lines.</p>
+immediately prior to any <code>pluginRegistry.&lt;pluginName&gt;.extraConfig</code> config lines.</p>
 <p>Leave null if no such extra configuration is required.</p>
 </div>
 <div class="option_properties">

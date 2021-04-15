@@ -42,7 +42,7 @@ envy.lazy_mapped_plugins = setmetatable({ }, envy.automatic_subtables)
 envy.load_triggers = setmetatable({ }, envy.automatic_subtables)
 envy.set_rtp = function()
   envy.final_rtp = tostring(envy.first_rtp) .. tostring(envy.before_rtp) .. "," .. tostring(envy.middle_rtp) .. tostring(envy.after_rtp) .. "," .. tostring(envy.last_rtp)
-  return vim.api.nvim_set_option('runtimepath', envy.final_rtp)
+  vim.api.nvim_set_option('runtimepath', envy.final_rtp)
 end
 envy.setup_lazy_loading = function()
   for ft, _plugins in pairs(envy.lazy_filetype_plugins) do
@@ -90,7 +90,7 @@ end
 envy.load_on_filetype = function(ft)
   local plugins = envy.lazy_filetype_plugins[ft]
   local syntax_path = "syntax/" .. tostring(ft) .. ".vim"
-  return envy.load_plugins(plugins, {
+  envy.load_plugins(plugins, {
     "plugin"
   }, {
     "after/plugin"
@@ -204,7 +204,7 @@ envy.cmd_proxy = function(cmd, bang, range_start, range_end, quoted_args)
     prefix = tostring(range_start) .. "," .. tostring(range_end)
   end
   local real_cmd = string.format("%s%s%s %s", prefix, cmd, bang, quoted_args)
-  return vim.api.nvim_command(real_cmd)
+  vim.api.nvim_command(real_cmd)
 end
 envy.lazy_load_plugins = function(plugins)
   envy.load_plugins(plugins, {
@@ -313,5 +313,5 @@ envy.map_proxy = function(map, plugins, maybe_with_prefix, key_prefix)
   local replace = string.format("%c%c%c", 0x80, 253, 83)
   local escaped_map = string.gsub(map, "^<Plug>", replace, 1)
   local final_input = tostring(escaped_map) .. tostring(extra_input)
-  return vim.api.nvim_feedkeys(final_input, '', true)
+  vim.api.nvim_feedkeys(final_input, '', true)
 end
