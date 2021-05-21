@@ -996,17 +996,12 @@ in
       # Can't make this e.g. `attrsOf package` because there *may* be non-package
       # members, and there *definitely* are in nixpkgs.vimPlugins
       type = with types; attrs;
+      # We need to filter out deprecated aliases, as otherwise we'll trigger a `throw` later
       default = let
-        plugins = pkgs.callPackage "${pkgs.path}/pkgs/misc/vim-plugins/generated.nix" {
-          inherit (pkgs.vimUtils) buildVimPluginFrom2Nix;
-          inherit overrides;
-        };
-        overrides = pkgs.callPackage "${pkgs.path}/pkgs/misc/vim-plugins/overrides.nix" { 
-          inherit (pkgs.darwin.apple_sdk.frameworks) Cocoa CoreFoundation CoreServices;
-          inherit (pkgs.vimUtils) buildVimPluginFrom2Nix;
-          inherit (pkgs) llvmPackages;
-        };
-      in plugins;
+        filterDeprecated = filterAttrs (name: plugin: !(elem name deprecatedPlugins));
+        deprecatedPlugins = attrNames (builtins.fromJSON
+          (builtins.readFile (pkgs.path + "/pkgs/misc/vim-plugins/deprecated.json")));
+      in filterDeprecated pkgs.vimPlugins;
       defaultText = "base vimPlugins without aliases";
       description = ''
         Base set of vim plugin derivations to resolve string/name-based plugin
