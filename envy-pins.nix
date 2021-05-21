@@ -27,6 +27,7 @@ let
 in
 pkgs.mkShell {
   nativeBuildInputs = [
+    pkgs.nix-prefetch-git
     (pkgs.python3.withPackages(ps: with ps; [
       git-url-parse
     ]))
