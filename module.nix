@@ -491,7 +491,7 @@ let
   filterPluginSpec = spec: filterAttrs (n: v: elem n pluginDrvAttrs) spec;
 
   # sourceFromPin :: {SourcePin} -> StorePath
-  sourceFromPin = pin: pkgs.fetchgit { inherit (pin) url rev sha256; };
+  sourceFromPin = pin: pkgs.fetchgit { inherit (pin) url rev sha256 leaveDotGit fetchSubmodules; };
 
   # getRemoteDeps :: String -> Any (Bool ExtraPython2Package ExtraPython3Package)
   getRemoteDeps = attrname: map (plugin: plugin.remote.${attrname});
@@ -604,6 +604,20 @@ let
       type = with types; str;
       description = ''
         Version string appropriate for a nixpkgs derivation.
+      '';
+    };
+    fetchSubmodules = mkOption {
+      type = with types; bool;
+      default = false;
+      description = ''
+        Whether or not to fetch git submodules.
+      '';
+    };
+    leaveDotGit = mkOption {
+      type = with types; bool;
+      default = false;
+      description = ''
+        Whether or not to leave the .git directory intact.
       '';
     };
     # TODO This isn't really used right now, but is intended to allow for
