@@ -772,7 +772,7 @@ let
         in `sourcePins` in order to build the neovim configuration.
       '';
       default = null;
-      type = with types; nullOr (either package (either str path));
+      type = with types; nullOr (either path (either package str));
     };
     branch = mkOption {
       description = ''
