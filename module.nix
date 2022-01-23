@@ -428,9 +428,9 @@ let
   defaultPluginRegistry = let
     baseRegistry = mapAttrs (wrapUpstreamPluginDrv) (filterVimPlugins config.baseVimPlugins);
     # filterVimPlugins :: AttrSet -> { Derivation }
-    # Filter out functions resulting from overlay application, and other
+    # Filter out functions resulting from overlay application, broken packages, and other
     # irrelvant attributes
-    filterVimPlugins = attrs: filterAttrs (n: v: isDerivation v) attrs;
+    filterVimPlugins = attrs: filterAttrs (n: v: isDerivation v && !v.meta.broken ) attrs;
   in baseRegistry;
   # }}}
 
