@@ -1014,7 +1014,7 @@ in
       default = let
         filterDeprecated = filterAttrs (name: plugin: !(elem name deprecatedPlugins));
         deprecatedPlugins = attrNames (builtins.fromJSON
-          (builtins.readFile (pkgs.path + "/pkgs/misc/vim-plugins/deprecated.json")));
+          (builtins.readFile (pkgs.path + "/pkgs/applications/editors/vim/plugins/deprecated.json")));
       in filterDeprecated pkgs.vimPlugins;
       defaultText = "base vimPlugins without aliases";
       description = ''
