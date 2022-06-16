@@ -440,8 +440,9 @@ let
   vimPlugAttrs = [ "on" "for" ];
   # pluginConfigType attributes that should be retained in the composed plugin
   # derivations
-  pluginDrvAttrs = filter (n: !elem n sourceAttrs) (attrNames pluginConfigType.options)
+  pluginDrvAttrs = filter (n: !elem n filteredPluginAttrs) (attrNames pluginConfigType.options)
     ++ singleton "pluginType";
+  filteredPluginAttrs = sourceAttrs ++ [ "rtp" ];
 
   # TODO: Is there anything else we can automatically infer?
   # wrapUpstreamPluginDrv :: String -> Derivation -> Plugin
@@ -482,10 +483,13 @@ let
     name = "${pname}-${version}";
     passthru = {
       inherit depName;
-      # Add the rest of the plugin config so we can directly build the vim
-      # config from the composed plugins
-    } // (filterPluginSpec spec);
-  } // optionalAttrs (spec.rtp != null) { rtpPath = spec.rtp; });
+    }
+    # Add the rest of the plugin config so we can directly build the vim
+    # config from the composed plugins
+    // (filterPluginSpec spec)
+    # Track the specified rtp-directory value if it was set in the plugin config
+    // optionalAttrs (spec.rtp != null) { rtpPath = spec.rtp; };
+  });
 
   # filterPluginSpec :: Plugin -> AttrSet
   filterPluginSpec = spec: filterAttrs (n: v: elem n pluginDrvAttrs) spec;
