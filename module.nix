@@ -430,7 +430,7 @@ let
     # filterVimPlugins :: AttrSet -> { Derivation }
     # Filter out functions resulting from overlay application, broken packages, and other
     # irrelvant attributes
-    filterVimPlugins = attrs: filterAttrs (n: v: isDerivation v && !v.meta.broken ) attrs;
+    filterVimPlugins = attrs: filterAttrs (n: v: (builtins.tryEval v).success && isDerivation v && !v.meta.broken ) attrs;
   in baseRegistry;
   # }}}
 
