@@ -140,7 +140,7 @@ let
     lazyPlugList = filter (isLazyPlugin) plugList;
     beforePlugList = baseList;
     afterPlugList = flip filter baseList
-      (plugin: !isLocal plugin && hasAfterDir plugin.rtp);
+      (plugin: !isLocal plugin && hasAfterDir plugin.outPath);
     localPlugList = filter (isLocal) baseList;
 
     conditionalWrapper = plugin: lines: let
@@ -165,7 +165,7 @@ let
       then condExprs.${config.configLanguage} plugin.condition
       else lines;
     ensureList = maybeList: if isList maybeList then maybeList else singleton maybeList;
-    plugPath = plugin: if isLocal plugin then plugin.dir else plugin.rtp;
+    plugPath = plugin: if isLocal plugin then plugin.dir else plugin.outPath;
     isLocal = plugin: plugin.pluginType == "local";
     isLazyPlugin = plugin: strListSet plugin.for || strListSet plugin.on_cmd || strListSet plugin.on_map;
   in luaLoadPluginsSrc;
@@ -195,7 +195,7 @@ let
       mergedPlugin = let
         drv = pkgs.symlinkJoin {
           name = "merged-vim-plugins";
-          paths = map (p: p.rtp) mergeablePlugins;
+          paths = map (p: p.outPath) mergeablePlugins;
           postBuild = ''
             # Rebuild help tag index
             if [ -d "$out/doc" ]; then
@@ -214,7 +214,7 @@ let
           '';
         };
       in drv // {
-        rtp = "${drv}";
+        outPath = "${drv}";
         pluginType = "source";
         condition = null; on_cmd = []; on_map = []; for = [];
         # Needed for rplugin generation
@@ -436,13 +436,13 @@ let
 
   # Helpers {{{
   sourceAttrs = [ "source" "branch" "tag" "commit" ];
-  # dir and rtp not included because we effectively apply them earlier
+  # dir and outPath not included because we effectively apply them earlier
   vimPlugAttrs = [ "on" "for" ];
   # pluginConfigType attributes that should be retained in the composed plugin
   # derivations
   pluginDrvAttrs = filter (n: !elem n filteredPluginAttrs) (attrNames pluginConfigType.options)
     ++ singleton "pluginType";
-  filteredPluginAttrs = sourceAttrs ++ [ "rtp" ];
+  filteredPluginAttrs = sourceAttrs ++ [ "outPath" ];
 
   # TODO: Is there anything else we can automatically infer?
   # wrapUpstreamPluginDrv :: String -> Derivation -> Plugin
