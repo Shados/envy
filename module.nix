@@ -15,7 +15,7 @@
 pkgs:
 { config, lib, options, ... }:
 let
-  inherit (lib) all any attrNames attrValues concatLists concatMap concatMapStringsSep concatStrings concatStringsSep elem escape filter filterAttrs filterAttrsRecursive flatten flip foldl' foldr getValues hasAttr hasPrefix isDerivation isFunction isList isString last length literalExample mapAttrs mapAttrsToList mkDefault mkIf mkOption mkOptionType nameValuePair optionals optionalAttrs optionalString replaceChars singleton splitString types;
+  inherit (lib) all any attrNames attrValues concatLists concatMap concatMapStringsSep concatStrings concatStringsSep elem escape filter filterAttrs filterAttrsRecursive flatten flip foldl' foldr getValues hasAttr hasPrefix isDerivation isFunction isList isString last length literalExample mapAttrs mapAttrsToList mkDefault mkIf mkOption mkOptionType nameValuePair optionals optionalAttrs optionalString replaceStrings singleton splitString types;
   nvimLib = import ./lib.nix { nixpkgs = pkgs; };
 
 
@@ -676,7 +676,7 @@ let
     config = {
       target = mkDefault name;
       source = mkIf (config.text != null) (
-        let name' = "config-nvim-${replaceChars [ " " ] [ "_" ] (baseNameOf name)}";
+        let name' = "config-nvim-${replaceStrings [ " " ] [ "_" ] (baseNameOf name)}";
         in mkDefault (pkgs.writeText name' config.text)
       );
     };

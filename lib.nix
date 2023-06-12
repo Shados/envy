@@ -83,8 +83,8 @@ rec {
 
 
   # These are also imported by the module :)
-  escapedName = name: replaceChars [ "/" "-" " " ] [ "-" "\\x2d" "\\x20" ] name;
-  unescapedName = name: replaceChars [ "-" "\\x2d" "\\x20" ] [ "/" "-" " " ] name;
+  escapedName = name: replaceStrings [ "/" "-" " " ] [ "-" "\\x2d" "\\x20" ] name;
+  unescapedName = name: replaceStrings [ "-" "\\x2d" "\\x20" ] [ "/" "-" " " ] name;
   # pinPathFor :: Either Path String -> String -> StorePath
   pinPathFor = directoryPath: pluginName: directoryPath + "/${escapedName pluginName}.json";
   pinFromPath = pinPath: let
