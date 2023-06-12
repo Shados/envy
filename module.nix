@@ -15,7 +15,7 @@
 pkgs:
 { config, lib, options, ... }:
 let
-  inherit (lib) all any attrNames attrValues concatLists concatMap concatMapStringsSep concatStrings concatStringsSep elem escape filter filterAttrs filterAttrsRecursive flatten flip foldl' foldr getValues hasAttr hasPrefix isDerivation isFunction isList isString last length literalExample mapAttrs mapAttrsToList mkDefault mkIf mkOption mkOptionType nameValuePair optionals optionalAttrs optionalString replaceStrings singleton splitString types;
+  inherit (lib) all any attrNames attrValues concatLists concatMap concatMapStringsSep concatStrings concatStringsSep elem escape filter filterAttrs filterAttrsRecursive flatten flip foldl' foldr getValues hasAttr hasPrefix isDerivation isFunction isList isString last length literalExpression mapAttrs mapAttrsToList mkDefault mkIf mkOption mkOptionType nameValuePair optionals optionalAttrs optionalString replaceStrings singleton splitString types;
   nvimLib = import ./lib.nix { nixpkgs = pkgs; };
 
 
@@ -525,7 +525,7 @@ let
     type = langPackageType;
     default = (_: []);
     defaultText = "packageSet: []";
-    example = literalExample "(packageSet: with packageSet: [ ${examplePackages} ])";
+    example = literalExpression "(packageSet: with packageSet: [ ${examplePackages} ])";
   };
 
   # mkRemoteHostOption :: String -> Option
@@ -923,7 +923,7 @@ in
       # Effectively defaulted to defaultPluginRegistry later
       default = {};
       # TODO: Load this from a CI-tested example file?
-      example = literalExample ''
+      example = literalExpression ''
         {
           # A "source" plugin, where the source is inferred from the attribute
           # name, treated as a vim-plug-compatible shortname
@@ -1094,7 +1094,7 @@ in
         Envy these would typically be locally-managed files in the
         `~/.config/nvim` folder.
       '';
-      example = literalExample ''
+      example = literalExpression ''
         {
           autoload.source = ./neovim/autoload;
           ftplugin.source = ./neovim/ftplugin;
@@ -1126,7 +1126,7 @@ in
       type = extraPython3PackageType;
       default = (_: []);
       defaultText = "ps: []";
-      example = literalExample "(ps: with ps; [ python-language-server ])";
+      example = literalExpression "(ps: with ps; [ python-language-server ])";
       description = ''
         A function in `python.withPackages` format, which returns a list of
         Python 3 packages required for your plugins to work.
@@ -1148,7 +1148,7 @@ in
       type = extraPython2PackageType;
       default = (_: []);
       defaultText = "ps: []";
-      example = literalExample "(ps: with ps; [ pandas jedi ])";
+      example = literalExpression "(ps: with ps; [ pandas jedi ])";
       description = ''
         A function in `python.withPackages` format, which returns a list of
         Python 2 packages required for your plugins to work.

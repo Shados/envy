@@ -128,7 +128,7 @@ opt_val_to_markdown = (option, key, block=false) ->
       else
         val
     when 'table'
-      if val._type and val._type == 'literalExample'
+      if val._type and val._type == 'literalExpression'
         val.text
       else
         json_nix_attrs_to_string val
