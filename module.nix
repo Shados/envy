@@ -407,17 +407,17 @@ let
     # isUnresolvedPlugin :: Either String Plugin -> Bool
     isUnresolvedPlugin = dep: let
       depName = if builtins.typeOf dep == "string" then dep
-                else dep.pname;
+                else dep.pname or dep.name;
     in !(hasAttr depName baseRegistry);
     # unresolvedPluginSpec :: Either String Plugin -> Plugin
     unresolvedPluginSpec = dep: let
       spec = (if builtins.typeOf dep == "string"
         then {}
-        else wrapUpstreamPluginDrv dep.pname dep
+        else wrapUpstreamPluginDrv (dep.pname or dep.name) dep
       ) // { enable = true; };
       name = if builtins.typeOf dep == "string"
         then dep
-        else dep.pname;
+        else dep.pname or dep.name;
     in nameValuePair name spec;
   in withEnabledDeps;
   # }}}
@@ -500,7 +500,7 @@ let
   # getRemoteDeps :: String -> Any (Bool ExtraPython2Package ExtraPython3Package)
   getRemoteDeps = attrname: map (plugin: plugin.remote.${attrname});
   # plugDepAsString :: Either String Derivation -> String
-  plugDepAsString = dep: if isString dep then dep else dep.pname;
+  plugDepAsString = dep: if isString dep then dep else dep.pname or dep.name;
   # buildPythonEnv :: String -> { Derivation } ->
   #   Either ExtraPython2Package ExtraPython3Package -> Derivation
   buildPythonEnv = vimDepName: pyPackages: extraPackages: let

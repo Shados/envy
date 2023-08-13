@@ -36,3 +36,4 @@
 - [x] Re-add pre-/post-plugin extraConfig; although this isn't required
   per-plugin, it can be useful overall
 - [ ] Determine the impact of compileMoon's jankiness on eval times
+- [ ] See issue #3 and finish deprecating `.rtp` stuff?
