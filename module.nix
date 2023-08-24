@@ -84,27 +84,41 @@ let
   pluginOnlyInitScript = mkInitScript true remotePlugList;
 
   # localNvimFiles: A symlink tree of the configured extra nvim runtime files {{{
-  localNvimFiles = pkgs.runCommand "config-nvim" {} (let
-    filesJson = let
-      fileList = mapAttrsToList (addPath) (filterAttrs (n: v: v.enable) config.files);
-      # addPath :: String -> NvimFile -> { source :: String, target :: String }
-      addPath = name: file: {
-        inherit (file) source target;
-      };
-    in pkgs.writeText "local-nvim-files.json" (builtins.toJSON fileList);
+  localNvimFiles = flip pkgs.callPackage {
+    # NOTE: Not sure why I have to manually specify this, despite feeding it
+    # into `nativeBuildInputs` I don't get the correct package variant spliced
+    # in without being explicit.
+    lua = pkgs.pkgsBuildHost.luajit;
+  } (
+    { runCommand, writeText
+    , lua
+    }:
+    let
+      filesJson = let
+        fileList = mapAttrsToList (addPath) (filterAttrs (n: v: v.enable) config.files);
+        # addPath :: String -> NvimFile -> { source :: String, target :: String }
+        addPath = name: file: {
+          inherit (file) source target;
+        };
+      in writeText "local-nvim-files.json" (builtins.toJSON fileList);
 
-    # We already need Lua due to nvim, and the other deps are pretty minimal --
-    # doing this in bash would be less nice, jq isn't that great for working
-    # with collections.
-    luaDeps = ps: with ps; [ inspect luafilesystem rapidjson ];
-    # TODO change this when adding an option to configure the lua package used
-    # for neovim? would just be to save on having duplicate Lua's installed in
-    # this case; this one shouldn't particularly be open to customisation
-    luaPkg = pkgs.luajit.withPackages luaDeps;
-    luaBuilder = ./lua/config-nvim-builder.lua;
-  in ''
-    ${luaPkg}/bin/lua ${luaBuilder} ${filesJson} $out
-  '');
+      # We already need Lua due to nvim, and the other deps are pretty minimal --
+      # doing this in bash would be less nice, jq isn't that great for working
+      # with collections.
+      luaDeps = ps: with ps; [ inspect luafilesystem rapidjson ];
+      luaBuilder = ./lua/config-nvim-builder.lua;
+    in
+    runCommand "config-nvim" {
+      nativeBuildInputs = [
+        # TODO change this when adding an option to configure the lua package
+        # used for neovim? would just be to save on having duplicate Lua's
+        # installed in this case; this one shouldn't particularly be open to
+        # customisation
+        (lua.withPackages luaDeps)
+      ];
+    } ''
+      lua ${luaBuilder} ${filesJson} $out
+    '');
   # }}}
 
   luaSetup = builtins.readFile ./lua/vimrc-setup.lua;
