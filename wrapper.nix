@@ -1,25 +1,21 @@
 { stdenv, lib, makeWrapper
 , writeText
-, luaPkg
+, luajit
+, neovim-unwrapped
 }:
-
-with lib;
-neovim-unwrapped:
 let
-  neovim = neovim-unwrapped.override {
-    lua = luaPkg;
-  };
+  inherit (lib) concatMap concatStringsSep length makeBinPath optional optionals optionalString stringLength;
   wrapper = cfg:
   let
 
-    bin = "${neovim}/bin/nvim";
+    bin = "${neovim-unwrapped}/bin/nvim";
     binPath = makeBinPath (cfg.binDeps ++ cfg.extraBinPackages);
 
-    luaPathPrefix = drv: "${drv}/share/lua/${luaPkg.luaversion}";
-    luaCPathPrefix = drv: "${drv}/lib/lua/${luaPkg.luaversion}";
+    luaPathPrefix = drv: "${drv}/share/lua/${luajit.luaversion}";
+    luaCPathPrefix = drv: "${drv}/lib/lua/${luajit.luaversion}";
     makeLuaPath = drv: [ "${luaPathPrefix drv}/?/init.lua" "${luaPathPrefix drv}/?.lua" ];
     makeLuaCPath = drv: [ "${luaCPathPrefix drv}/?/init.so" "${luaCPathPrefix drv}/?.so" ];
-    luaEnv = luaPkg.withPackages (ps:
+    luaEnv = luajit.withPackages (ps:
       concatMap (f: f ps) cfg.luaModules
     );
 
@@ -49,7 +45,7 @@ let
         ${concatStringsSep " \\\n  " wrapperArgs}
     '';
   in stdenv.mkDerivation rec {
-    name = "neovim-configured-${lib.getVersion neovim}";
+    name = "neovim-configured-${lib.getVersion neovim-unwrapped}";
     buildCommand = ''
       if [ ! -x "${bin}" ]
       then
@@ -64,7 +60,7 @@ let
       + optionalString (!stdenv.isDarwin) ''
       # copy and patch the original neovim.desktop file
       mkdir -p $out/share/applications
-      substitute ${neovim}/share/applications/nvim.desktop $out/share/applications/nvim.desktop \
+      substitute ${neovim-unwrapped}/share/applications/nvim.desktop $out/share/applications/nvim.desktop \
         --replace 'TryExec=nvim' "TryExec=$out/bin/nvim" \
         --replace 'Name=Neovim' 'Name=WrappedNeovim'
     '' + optionalString cfg.withPython2 ''
@@ -98,14 +94,14 @@ let
 
     preferLocalBuild = true;
 
-    buildInputs = [ makeWrapper ];
-    passthru = { unwrapped = neovim; };
+    nativeBuildInputs = [ makeWrapper ];
+    passthru = { unwrapped = neovim-unwrapped; };
 
-    meta = neovim.meta // {
-      description = neovim.meta.description;
+    meta = neovim-unwrapped.meta // {
+      description = neovim-unwrapped.meta.description;
       hydraPlatforms = [ ];
       # prefer wrapper over the package
-      priority = (neovim.meta.priority or 0) - 1;
+      priority = (neovim-unwrapped.meta.priority or 0) - 1;
     };
   };
 in lib.makeOverridable wrapper

@@ -561,8 +561,11 @@ let
     moonFile = moontext: pkgs.runCommand "compiled.lua" {
       preferLocalBuild = true;
       src = pkgs.writeText "src.moon" moontext;
+      nativeBuildInputs = [
+        pkgs.luajitPackages.moonscript
+      ];
     } ''
-      ${pkgs.luajitPackages.moonscript}/bin/moonc -o $out $src
+      moonc -o $out $src
     '';
   in t: builtins.readFile (moonFile t);
 
@@ -1363,9 +1366,10 @@ in
     luaModules = concatMap (plugin: singleton plugin.luaDeps) sortedPlugins;
     binDeps = concatMap (plugin: plugin.binDeps) sortedPlugins;
     wrappedNeovim = let
-      # TODO change this when adding an option to configure the lua package used for neovim?
-      configureNeovim = pkgs.callPackage ./wrapper.nix { luaPkg = pkgs.luajit; };
-    in configureNeovim config.neovimPackage config;
+      configureNeovim = pkgs.callPackage ./wrapper.nix {
+        neovim-unwrapped = config.neovimPackage;
+      };
+    in configureNeovim config;
     generatePluginManifest = any (v: v) (map (requiresRemoteHost) [ "python2" "python3" ]);
     fullPluginRegistry = registryWithDeps (config.pluginRegistry);
 
