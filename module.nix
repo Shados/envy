@@ -210,6 +210,9 @@ let
         drv = pkgs.symlinkJoin {
           name = "merged-vim-plugins";
           paths = map (p: p.outPath) mergeablePlugins;
+          nativeBuildInputs = [
+            config.neovimPackage
+          ];
           postBuild = ''
             # Rebuild help tag index
             if [ -d "$out/doc" ]; then
@@ -218,7 +221,7 @@ let
                 rm -f "$out/doc/tags"
               fi
               echo "Building help tags for merged plugins"
-              if ! ${config.neovimPackage}/bin/nvim -N -u NONE -i NONE -n -E -s -V1 -c "helptags $out/doc" +quit!; then
+              if ! nvim -N -u NONE -i NONE -n -E -s -V1 -c "helptags $out/doc" +quit!; then
                 echo "Failed to build help tags!"
                 exit 1
               fi
