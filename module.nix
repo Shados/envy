@@ -79,9 +79,8 @@ let
   in langSwitch.${config.configLanguage};
 
   initScript = mkInitScript false plugList;
-  # This is used for declaratively generating the remote plugins manifest, so
-  # it only really needs to ensure that remote plugins are loaded
-  pluginOnlyInitScript = mkInitScript true remotePlugList;
+  # This is used for declaratively generating the remote plugins manifest
+  pluginOnlyInitScript = mkInitScript true plugList;
 
   # localNvimFiles: A symlink tree of the configured extra nvim runtime files {{{
   localNvimFiles = flip pkgs.callPackage {
@@ -234,11 +233,6 @@ let
         outPath = "${drv}";
         pluginType = "source";
         condition = null; on_cmd = []; on_map = []; for = [];
-        # Needed for rplugin generation
-        remote = {
-          python2 = any (p: p.remote.python2) mergeablePlugins;
-          python3 = any (p: p.remote.python3) mergeablePlugins;
-        };
       };
       mergedList =
         if length mergeablePlugins > 1
@@ -317,7 +311,6 @@ let
   # }}}
 
   plugList = if config.mergePlugins then flatten mergedBuckets else sortedPlugins;
-  remotePlugList = filter (plug: any (v: v == true) (attrValues plug.remote)) plugList;
 
   # sortedPlugins: List of required plugin drvs sorted into valid loading order
   sortedPlugins = flatten rawPluginBuckets;
