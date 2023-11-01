@@ -4,7 +4,7 @@
 , neovim-unwrapped
 }:
 let
-  inherit (lib) concatMap concatStringsSep length makeBinPath optional optionals optionalString stringLength;
+  inherit (lib) concatMap concatStringsSep escapeShellArg length makeBinPath optional optionals optionalString stringLength;
   wrapper = cfg:
   let
 
@@ -37,7 +37,7 @@ let
       (makeSuffixListArg "LUA_CPATH" ";" (makeLuaCPath luaEnv))
     ]
     ;
-    makeSuffixArg = var: sep: val: "--suffix ${var} '${sep}' '${val}'";
+    makeSuffixArg = var: sep: val: "--suffix ${escapeShellArg var} ${escapeShellArg sep} ${escapeShellArg val}";
     makeSuffixListArg = var: sep: list: makeSuffixArg var sep "${concatStringsSep sep list}";
 
     makeNvimWrapper = wrapperArgs: ''
