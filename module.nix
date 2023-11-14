@@ -488,7 +488,7 @@ let
     src = spec.source;
   in buildPlugin pluginName pname spec version src;
 
-  buildPlugin = depName: pname: spec: version: src: pkgs.vimUtils.buildVimPluginFrom2Nix (rec {
+  buildPlugin = depName: pname: spec: version: src: pkgs.vimUtils.buildVimPlugin (rec {
     inherit pname version src;
     name = "${pname}-${version}";
     passthru = {
