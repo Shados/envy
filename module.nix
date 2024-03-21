@@ -375,7 +375,7 @@ let
       if plugin.dir != null
         then  plugin // { pluginType = "local"; }
 
-      else if plugin ? source && isDerivation plugin.source && hasPrefix "vimplugin-" plugin.source.name
+      else if plugin ? source && isDerivation plugin.source && hasAttr name config.baseVimPlugins
         then  plugin // { pluginType = "upstream"; }
 
       else if plugin ? source && ((builtins.typeOf plugin.source) == "path" || isDerivation plugin.source)
