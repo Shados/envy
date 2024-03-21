@@ -249,6 +249,7 @@ let
   # that should be loaded *after* one or more plugins in one or more of the
   # previous buckets, but that have no specific ordering requirements with
   # respect to the other plugins in their own bucket.
+
   # This is used both to created a list of plugins sorted in a valid load
   # order, and optionally also to generate "merged" plugins (where possible) in
   # order to minimize the number of directories added to nvim's runtimepath.
@@ -424,7 +425,7 @@ let
       spec = (if builtins.typeOf dep == "string"
         then {}
         else wrapUpstreamPluginDrv (dep.pname or dep.name) dep
-      ) // { enable = true; };
+      ) // { enable = false; };
       name = if builtins.typeOf dep == "string"
         then dep
         else dep.pname or dep.name;
@@ -1353,7 +1354,7 @@ in
     pluginOnlyRC = pkgs.writeText "plugin-only-init.lua" pluginOnlyInitScript;
     pluginSourcesJson = pkgs.writeText "nvim-plugin-configs.json" (builtins.toJSON pluginSourceMap);
     requiredPluginsJson = pkgs.writeText "nvim-required-plugins.json" (builtins.toJSON (attrNames requiredPlugins));
-    depIndexJson = pkgs.writeText "nvim-dependenxy-index.json" (builtins.toJSON (depIndex));
+    depIndexJson = pkgs.writeText "nvim-dependency-index.json" (builtins.toJSON (depIndex));
     python2Env = buildPythonEnv "python2Deps" pkgs.pythonPackages config.extraPython2Packages;
     python3Env = buildPythonEnv "python3Deps" pkgs.python3Packages config.extraPython3Packages;
     luaModules = concatMap (plugin: singleton plugin.luaDeps) sortedPlugins;
