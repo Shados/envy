@@ -363,7 +363,7 @@ let
       ({ depName = pluginName; } // (filterPluginSpec wrappedDrv));
     # overridePassthru :: Derivation -> AttrSet -> Derivation
     overridePassthru = drv: passthru: drv.overrideAttrs(oldAttrs: {
-      passthru = (oldAttrs.passthru or {}) // passthru;
+      passthru = (oldAttrs.passthru or {}) // passthru // { dependencies = passthru.dependencies ++ drv.dependencies or []; };
     });
   in mapAttrs (composePlugin) taggedPluginRegistry;
   # }}}
@@ -375,10 +375,10 @@ let
       if plugin.dir != null
         then  plugin // { pluginType = "local"; }
 
-      else if plugin ? source && isDerivation plugin.source && hasAttr name config.baseVimPlugins
+      else if plugin ? source && isDerivation plugin.source
         then  plugin // { pluginType = "upstream"; }
 
-      else if plugin ? source && ((builtins.typeOf plugin.source) == "path" || isDerivation plugin.source)
+      else if plugin ? source && (builtins.typeOf plugin.source) == "path"
         then  plugin // { pluginType = "path"; }
 
       else    plugin // { pluginType = "source"; };
@@ -398,7 +398,10 @@ let
       enabledPlugins = filterAttrs (n: v: v.enable) withDeps;
       # getDeps :: String -> [String]
       getDeps = plugName: let
-        plugDeps = map (plugDepAsString) (withDeps.${plugName}.dependencies or []);
+        plugDeps = map (plugDepAsString) (specDeps ++ drvDeps);
+        specDeps = spec.dependencies or [];
+        drvDeps = if spec ? source && isDerivation spec.source then spec.source.dependencies or [] else [];
+        spec = withDeps.${plugName};
       in plugDeps ++ concatMap (getDeps) plugDeps;
     in deps;
     # enableDep :: { Plugin } -> String -> { Plugin }
@@ -413,8 +416,10 @@ let
       pluginDeps;
     pluginDeps = flatten (mapAttrsToList (unresolvedPluginDeps) baseRegistry);
     # unresolvedPluginDeps :: String -> Plugin -> [Plugin]
-    unresolvedPluginDeps = pluginName: spec:
-      map (unresolvedPluginSpec) (filter (isUnresolvedPlugin) spec.dependencies);
+    unresolvedPluginDeps = pluginName: spec: let
+      drvDeps = if spec ? source && isDerivation spec.source then spec.source.dependencies or [] else [];
+    in
+      map (unresolvedPluginSpec) (filter (isUnresolvedPlugin) (spec.dependencies ++ drvDeps));
     # isUnresolvedPlugin :: Either String Plugin -> Bool
     isUnresolvedPlugin = dep: let
       depName = if builtins.typeOf dep == "string" then dep
@@ -1034,7 +1039,7 @@ in
         deprecatedPlugins = attrNames (builtins.fromJSON
           (builtins.readFile (pkgs.path + "/pkgs/applications/editors/vim/plugins/deprecated.json")));
       in filterDeprecated pkgs.vimPlugins;
-      defaultText = "base vimPlugins without aliases";
+      defaultText = "base vimPlugins without deprecated aliases";
       description = ''
         Base set of vim plugin derivations to resolve string/name-based plugin
         dependencies against.
