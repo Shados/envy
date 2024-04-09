@@ -1,38 +1,15 @@
-# TODO add an assertion that all enabled source plugins have source pins, to
-# make debugging that easier?
-# TODO Things that could be improved/added in upstream nixpkgs vim plugins
-# generally:
-# - Track soft dependencies (before/after) on vim plugins
-# - Settle on a plugin name schema; probably sanest to use simply "reponame"
-#   for git-sourced plugins, and whatever vim-pi pulls for vim.org ones. Yes,
-#   "reponame" likely will violate nixpkgs naming conventions regularly (e.g.
-#   using '.' in attribute names), but the existing vimPlugins attribute set
-#   doesn't match the camelCase naming convention to begin with.
-
 # We want to work as both a stand-alone module and a submodule, but submodules
 # only get {config, lib, options} as arguments, so we have to wrap in another
 # function to get pkgs
 pkgs:
 { config, lib, options, ... }:
 let
-  inherit (lib) all any attrNames attrValues concatLists concatMap concatMapStringsSep concatStrings concatStringsSep elem escape filter filterAttrs filterAttrsRecursive flatten flip foldl' foldr getValues hasAttr hasPrefix isDerivation isFunction isList isString last length literalExpression mapAttrs mapAttrsToList mkDefault mkIf mkOption mkOptionType nameValuePair optionals optionalAttrs optionalString replaceStrings singleton splitString types;
+  inherit (lib) all any attrNames attrValues concatLists concatMap concatMapStringsSep concatStrings concatStringsSep elem escape filter filterAttrs filterAttrsRecursive flatten flip foldl' foldr getValues hasAttr hasPrefix isDerivation isFunction isList isString length literalExpression mapAttrs mapAttrsToList mkDefault mkIf mkOption mkOptionType nameValuePair optionals optionalAttrs optionalString recursiveUpdate replaceStrings singleton splitString types unique;
+  inherit (builtins) unsafeDiscardStringContext;
   nvimLib = import ./lib.nix { nixpkgs = pkgs; };
 
 
   mkInitScript = isPluginOnly: plugList: ''
-    -- We explicitly set 'loaded_' variables for plugin hosts not provided by
-    -- the module in order to avoid expensive (and impure) dynamic searching
-    -- for them.
-    ${if config.withPython2
-      then ''vim.api.nvim_set_var("python_host_prog", "${config.python2Env}/bin/python")''
-      else ''vim.api.nvim_set_var("loaded_python_provider", "1")''}
-    ${if config.withPython3
-      then ''vim.api.nvim_set_var("python3_host_prog", "${config.python3Env}/bin/python")''
-      else ''vim.api.nvim_set_var("loaded_python3_provider", "1")''}
-    vim.api.nvim_set_var("loaded_pythonx_provider", "1")
-    vim.api.nvim_set_var("loaded_node_provider", "1")
-    vim.api.nvim_set_var("loaded_ruby_provider", "1")
-
     -- Envy Lua runtime
     ${luaSetup}
   '' + optionalString (config.files != {} && !isPluginOnly) ''
@@ -153,7 +130,7 @@ let
     lazyPlugList = filter (isLazyPlugin) plugList;
     beforePlugList = baseList;
     afterPlugList = flip filter baseList
-      (plugin: !isLocal plugin && hasAfterDir plugin.outPath);
+      (plugin: !isLocal plugin && hasAfterDir plugin.source.outPath);
     localPlugList = filter (isLocal) baseList;
 
     conditionalWrapper = plugin: lines: let
@@ -178,7 +155,7 @@ let
       then condExprs.${config.configLanguage} plugin.condition
       else lines;
     ensureList = maybeList: if isList maybeList then maybeList else singleton maybeList;
-    plugPath = plugin: if isLocal plugin then plugin.dir else plugin.outPath;
+    plugPath = plugin: if isLocal plugin then plugin.dir else plugin.source.outPath;
     isLocal = plugin: plugin.pluginType == "local";
     isLazyPlugin = plugin: strListSet plugin.for || strListSet plugin.on_cmd || strListSet plugin.on_map;
   in luaLoadPluginsSrc;
@@ -208,7 +185,7 @@ let
       mergedPlugin = let
         drv = pkgs.symlinkJoin {
           name = "merged-vim-plugins";
-          paths = map (p: p.outPath) mergeablePlugins;
+          paths = map (plugin: plugin.source.outPath) mergeablePlugins;
           nativeBuildInputs = [
             config.neovimPackage
           ];
@@ -229,9 +206,9 @@ let
             fi
           '';
         };
-      in drv // {
-        outPath = "${drv}";
-        pluginType = "source";
+      in {
+        source = drv;
+        pluginType = "path";
         condition = null; on_cmd = []; on_map = []; for = [];
       };
       mergedList =
@@ -253,35 +230,35 @@ let
   # This is used both to created a list of plugins sorted in a valid load
   # order, and optionally also to generate "merged" plugins (where possible) in
   # order to minimize the number of directories added to nvim's runtimepath.
-  rawPluginBuckets = let
+  rawPluginBuckets = map (bucket: map (path: registryByPath.${path}) bucket) rawStringPluginBuckets;
+  rawStringPluginBuckets = let
     # addToBuckets :: [String] -> [[PluginDrv]] -> [String] -> [[PluginDrv]]
     addToBuckets = done: buckets: rem: let
       buckets' = buckets ++ [ currentBucket ];
       # List of plugins whose dependencies (soft and hard) are satisfied by the
       # plugins already done
       currentBucket = filter (p: isSatisfied p) rem;
-      # isSatisfied :: PluginDrv -> Bool
-      isSatisfied = plug: let
+      isSatisfied = path: let
         # Set of plugins that this plugin must be ordered after, and that are
         # part of the plugin dependency closure of this neovim config
-        after = filter (n: hasAttr n requiredPlugins) depIndex.${plug.depName}.after;
+        after = filter (n: elem n requiredPlugins) depIndex.${path}.after;
       in all (dep: elem dep done) after;
 
-      rem' = filter (plug: ! isSatisfied plug) rem;
-      done' = done ++ (map (plug: plug.depName) currentBucket);
+      rem' = filter (p: ! isSatisfied p) rem;
+      done' = done ++ currentBucket;
     in if length rem' > 0
       then addToBuckets done' buckets' rem'
       else buckets';
-  in addToBuckets [] [] (attrValues requiredPluginDrvs);
+  in addToBuckets [] [] requiredPlugins;
   # }}}
 
-  # depIndex: Maps plugin names to the plugins that should be loaded before/after them {{{
+  # depIndex: Maps plugin paths to the plugins that should be loaded before/after them {{{
   depIndex = let
-    fullIndex = foldl' (addDepInfo) {} (mapAttrsToList (nameValuePair) config.fullPluginRegistry);
+    fullIndex = foldl' (addDepInfo) {} (mapAttrsToList (nameValuePair) registryByPath);
     # addDepInfo :: { Plugin } -> {name :: String, value :: Plugin } ->
     #   { Plugin }
     addDepInfo = index: {name, value}: let
-      plugin = value;
+      spec = value;
 
       updatedIndex = foldl' (addUpdate) index updates;
 
@@ -300,13 +277,14 @@ let
       updates = beforeUpdates ++ afterUpdates;
 
       beforeUpdates =
-        map (plugName: nameValuePair plugName { before = [ name ]; }) (depStrings ++ plugin.after or [])
-        ++ singleton (nameValuePair name { before = plugin.before or []; });
-      depStrings = map (plugDepAsString) (plugin.dependencies or []);
+        map (plugName: nameValuePair plugName { before = [ name ]; }) (deps ++ spec.after or [])
+        ++ singleton (nameValuePair name { before = spec.before or []; });
 
       afterUpdates =
-        (map (plugName: nameValuePair plugName { after = [ name ]; }) (plugin.before or []))
-        ++ singleton (nameValuePair name { after = plugin.after or [] ++ depStrings;});
+        (map (plugName: nameValuePair plugName { after = [ name ]; }) (spec.before or []))
+        ++ singleton (nameValuePair name { after = spec.after or [] ++ deps;});
+
+      deps = spec.dependencies or [];
     in updatedIndex;
   in fullIndex;
   # }}}
@@ -315,56 +293,78 @@ let
 
   # sortedPlugins: List of required plugin drvs sorted into valid loading order
   sortedPlugins = flatten rawPluginBuckets;
-
-  # pluginSourceMap: Plugin:source mappings, for prefetching plugin sources {{{
-  pluginSourceMap = let
-    # Construct a list of (name,{...}@srcSpec) pairs
-    pluginSources = mapAttrs (sourcesForPlugin) sourcePlugins;
-
-    # sourcesForPlugin :: String -> TaggedPlugin ->
-    #   { source :: String, branch :: String, tag :: String, commit :: String }
-    sourcesForPlugin = name: spec:
-      (filterAttrs (n: v: elem n sourceAttrs && v != null) spec) // {
-        # Default source url to name, assuming the name is a vim-plug
-        # compatible shortname
-        source = if spec.source != null then spec.source else name;
-      };
-  in pluginSources;
   # }}}
 
-  sourcePlugins = filterAttrs (n: v: v ? pluginType && v.pluginType == "source") taggedPluginRegistry;
-
-  # requiredPluginDrvs: Dependency closure of plugin derivations that need to be installed
-  requiredPluginDrvs = mapAttrs (name: _: composedRegistry.${name}) requiredPlugins;
-
   # requiredPlugins: Dependency closure of raw plugins that need to be installed
-  requiredPlugins = filterAttrs (n: v: v.enable) config.fullPluginRegistry;
+  requiredPlugins = let
+    getDeps = pluginPath: let
+      directDeps = registryByPath.${pluginPath}.dependencies;
+    in [ pluginPath ] ++ concatLists (map getDeps directDeps);
+  in unique (concatLists (map getDeps (enabledPlugins)));
 
-  # composedRegistry: pluginRegistry composed with source pins to make drvs {{{
-  # Takes the plugin registry and composes it with the source pins to ensure
-  # that all members are actual plugin derivations. Additionally, associates
-  # the registry name for the plugin with the derivation (via `passthru`) to
-  # make dependency tracking simple.
-  composedRegistry = let
-    # composePlugin :: String -> TaggedPlugin -> PluginDrv
-    composePlugin = pluginName: plugin:
-      # Source plugin
-      if plugin.pluginType == "source" then buildPluginFromSourcePin pluginName plugin
-      # Store-path src plugin
-      else if plugin.pluginType == "path" then buildPluginFromPath pluginName plugin
-      # Upstream/nixpkgs/derivation plugin
-      else if plugin.pluginType == "upstream" then overrideUpstreamPlugin pluginName plugin
-      # "Local", unmanaged plugin
-      else plugin // { depName = pluginName; };
+  # Directly enabled plugins, not including dependencies
+  enabledPlugins = attrNames (filterAttrs (n: v: v.enable) registryByPath);
 
-    # overrideUpstreamPlugin :: String -> Derivation -> PluginDrv
-    overrideUpstreamPlugin = pluginName: wrappedDrv: overridePassthru
-      wrappedDrv.source
-      ({ depName = pluginName; } // (filterPluginSpec wrappedDrv));
-    # overridePassthru :: Derivation -> AttrSet -> Derivation
-    overridePassthru = drv: passthru: drv.overrideAttrs(oldAttrs: {
-      passthru = (oldAttrs.passthru or {}) // passthru // { dependencies = passthru.dependencies ++ drv.dependencies or []; };
-    });
+  registryByPath = let
+    # Map output paths to plugin-specs, including dependencies, generating new
+    # ones for derivation dependencies that aren't already in the registry
+    registry = foldl' (registry: spec: let
+      # Only 'local' plugins won't have an outPath, at this point
+      path = pathFromSpec spec;
+
+      registryWithDeps = if spec ? source
+        then let
+          registryWithDrvDeps = registerDeps registry spec.source;
+        in foldl' (registry': drv: registerDep registry' drv) registryWithDrvDeps (filter isDerivation spec.dependencies)
+        else registry;
+
+      registerDeps = registry: drv: let
+        deps = drv.dependencies or [];
+      in foldl' (registerDep) registry deps;
+
+      registerDep = registry': dep: recursiveUpdate {
+        ${unsafeDiscardStringContext dep.outPath} = wrapUpstreamPluginDrv dep true;
+      } (registerDeps registry' dep);
+
+    in registryWithDeps // {
+      ${path} = spec;
+    }) {} (attrValues drvRegistry);
+
+    # Ensure all dependency and ordering references are by derivation, not by name
+    registry' = mapAttrs (path: spec: spec // {
+      dependencies = (mapDepsToPaths spec.dependencies) ++ getDrvDeps spec;
+      after = mapDepsToPaths (spec.after or []);
+      before = mapDepsToPaths (spec.before or []);
+    }) registry;
+
+    mapDepsToPaths = deps: map depToPath deps;
+    depToPath = dep:
+      if builtins.isString dep then
+        if hasAttr dep drvRegistry
+        then pathFromSpec drvRegistry.${dep}
+        else throw "Dependency `${dep}` does not exist in `sn.programs.neovim.pluginRegistry`"
+      else unsafeDiscardStringContext dep.outPath;
+    pathFromSpec = spec:
+      if spec.pluginType == "local" then spec.dir
+      else if spec.pluginType == "path" then unsafeDiscardStringContext spec.source
+      else unsafeDiscardStringContext spec.source.outPath;
+  in registry';
+
+  getDrvDeps = spec: let
+    deps = if spec ? source && isDerivation spec.source
+      then spec.source.dependencies or []
+      else [];
+  in map (d: unsafeDiscardStringContext d.outPath) deps;
+
+  # drvRegistry: pluginRegistry where all non-local plugins are ensured to have proper drv sources {{{
+  drvRegistry = let
+    composePlugin = pluginName: plugin: plugin // {
+      source = if plugin.pluginType == "path"
+      then if plugin.source != null
+        then buildPluginFromPath pluginName plugin
+        else throw "Neither `source` nor `dir` specified for `sn.programs.neovim.pluginRegistry.${pluginName}`"
+      else plugin.source;
+    };
   in mapAttrs (composePlugin) taggedPluginRegistry;
   # }}}
 
@@ -378,149 +378,51 @@ let
       else if plugin ? source && isDerivation plugin.source
         then  plugin // { pluginType = "upstream"; }
 
-      else if plugin ? source && (builtins.typeOf plugin.source) == "path"
-        then  plugin // { pluginType = "path"; }
-
-      else    plugin // { pluginType = "source"; };
-  in mapAttrs (amendPluginRegistration) config.fullPluginRegistry;
-  # }}}
-
-  # registryWithDeps :: { Plugin } -> { Plugin }
-  # Add any missing dependency plugins referenced in the registry to the registry. {{{
-  # Takes a plugin registry, and generates default entries for missing
-  # dependencies, as well as ensures all dependencies of enabled plugins are
-  # enabled (recursively).
-  registryWithDeps = baseRegistry: let
-    # Ensure dependencies of enabled plugins are enabled, recursively
-    withEnabledDeps = foldl' (enableDep) withDeps depsToEnable;
-    depsToEnable = let
-      deps = concatLists (mapAttrsToList (n: _: getDeps n) enabledPlugins);
-      enabledPlugins = filterAttrs (n: v: v.enable) withDeps;
-      # getDeps :: String -> [String]
-      getDeps = plugName: let
-        plugDeps = map (plugDepAsString) (specDeps ++ drvDeps);
-        specDeps = spec.dependencies or [];
-        drvDeps = if spec ? source && isDerivation spec.source then spec.source.dependencies or [] else [];
-        spec = withDeps.${plugName};
-      in plugDeps ++ concatMap (getDeps) plugDeps;
-    in deps;
-    # enableDep :: { Plugin } -> String -> { Plugin }
-    enableDep = registry: name: registry // {
-      ${name} = registry.${name} // { enable = true; };
-    };
-
-    # Add missing dependencies
-    withDeps = foldl'
-      (registry: dep: registry // { ${dep.name} = dep.value; })
-      baseRegistry
-      pluginDeps;
-    pluginDeps = flatten (mapAttrsToList (unresolvedPluginDeps) baseRegistry);
-    # unresolvedPluginDeps :: String -> Plugin -> [Plugin]
-    unresolvedPluginDeps = pluginName: spec: let
-      drvDeps = if spec ? source && isDerivation spec.source then spec.source.dependencies or [] else [];
-    in
-      map (unresolvedPluginSpec) (filter (isUnresolvedPlugin) (spec.dependencies ++ drvDeps));
-    # isUnresolvedPlugin :: Either String Plugin -> Bool
-    isUnresolvedPlugin = dep: let
-      depName = if builtins.typeOf dep == "string" then dep
-                else dep.pname or dep.name;
-    in !(hasAttr depName baseRegistry);
-    # unresolvedPluginSpec :: Either String Plugin -> Plugin
-    unresolvedPluginSpec = dep: let
-      spec = (if builtins.typeOf dep == "string"
-        then {}
-        else wrapUpstreamPluginDrv (dep.pname or dep.name) dep
-      ) // { enable = false; };
-      name = if builtins.typeOf dep == "string"
-        then dep
-        else dep.pname or dep.name;
-    in nameValuePair name spec;
-  in withEnabledDeps;
-  # }}}
-
-  # defaultPluginRegistry: plugin registry built by wrapping vimPlugins {{{
-  # Takes base vimPlugins set and wraps each derivation in a pluginConfigType
-  # attribute set.
-  defaultPluginRegistry = let
-    baseRegistry = mapAttrs (wrapUpstreamPluginDrv) (filterVimPlugins config.baseVimPlugins);
-    # filterVimPlugins :: AttrSet -> { Derivation }
-    # Filter out functions resulting from overlay application, broken packages, and other
-    # irrelvant attributes
-    filterVimPlugins = attrs: filterAttrs (n: v: (builtins.tryEval v).success && isDerivation v && !v.meta.broken ) attrs;
-  in baseRegistry;
+      else    plugin // { pluginType = "path"; };
+  in mapAttrs (amendPluginRegistration) config.pluginRegistry;
   # }}}
 
   # Helpers {{{
-  sourceAttrs = [ "source" "branch" "tag" "commit" ];
-  # dir and outPath not included because we effectively apply them earlier
-  vimPlugAttrs = [ "on" "for" ];
-  # pluginConfigType attributes that should be retained in the composed plugin
-  # derivations
-  pluginDrvAttrs = filter (n: !elem n filteredPluginAttrs) (attrNames pluginConfigType.options)
-    ++ singleton "pluginType";
-  filteredPluginAttrs = sourceAttrs ++ [ "outPath" ];
-
   # TODO: Is there anything else we can automatically infer?
   # wrapUpstreamPluginDrv :: String -> Derivation -> Plugin
-  wrapUpstreamPluginDrv = name: pluginDrv: {
+  wrapUpstreamPluginDrv = pluginDrv: includeEnable: {
     source = pluginDrv;
     remote = {}
-      # NOTE python2/python3 are behind optionalAttrs as we don't want the user
-      # to have to mkForce in order to fix a false-negative
-      // optionalAttrs (pluginDrv ? pythonDependencies) {
-        python2 = true;
-        python2Deps = pluginDrv.pythonDependencies;
-      }
+      # NOTE python3 is behind optionalAttrs as we don't want the user to have
+      # to mkForce in order to fix a false-negative
       // optionalAttrs (pluginDrv ? python3Dependencies) {
         python3 = true;
         python3Deps = pluginDrv.python3Dependencies;
       };
-    dependencies = pluginDrv.dependencies or [];
+    dependencies = []; # Will be populated later
     binDeps = pluginDrv.propagatedBuildInputs or [];
-  };
-
-  # buildPluginFromSourcePin :: String -> Plugin -> PluginDrv
-  buildPluginFromSourcePin = pluginName: spec: let
-    pin = config.sourcePins.${pluginName};
-    pname = last (splitString "/" pluginName);
-    inherit (pin) version;
-    src = sourceFromPin pin;
-  in buildPlugin pluginName pname spec version src;
+    mergeable = true;
+    condition = null; on_cmd = []; on_map = []; for = [];
+    extraConfig = null;
+    pluginType = "upstream";
+  } // optionalAttrs includeEnable { enable = false; };
 
   # buildPluginFromPath :: String -> Plugin -> PluginDrv
   buildPluginFromPath = pluginName: spec: let
     pname = pluginName;
     version = "frompath";
     src = spec.source;
-  in buildPlugin pluginName pname spec version src;
-
-  buildPlugin = depName: pname: spec: version: src: pkgs.vimUtils.buildVimPlugin (rec {
+  in pkgs.vimUtils.buildVimPlugin (rec {
     inherit pname version src;
     name = "${pname}-${version}";
-    passthru = {
-      inherit depName;
-    }
-    # Add the rest of the plugin config so we can directly build the vim
-    # config from the composed plugins
-    // (filterPluginSpec spec)
-    # Track the specified rtp-directory value if it was set in the plugin config
-    // optionalAttrs (spec.rtp != null) { rtpPath = spec.rtp; };
   });
-
-  # filterPluginSpec :: Plugin -> AttrSet
-  filterPluginSpec = spec: filterAttrs (n: v: elem n pluginDrvAttrs) spec;
 
   # sourceFromPin :: {SourcePin} -> StorePath
   sourceFromPin = pin: pkgs.fetchgit { inherit (pin) url rev sha256 leaveDotGit fetchSubmodules; };
 
-  # getRemoteDeps :: String -> Any (Bool ExtraPython2Package ExtraPython3Package)
+  # getRemoteDeps :: String -> Any (Bool ExtraPython3Package ExtraPython3Package)
   getRemoteDeps = attrname: map (plugin: plugin.remote.${attrname});
   # plugDepAsString :: Either String Derivation -> String
   plugDepAsString = dep: if isString dep then dep else dep.pname or dep.name;
   # buildPythonEnv :: String -> { Derivation } ->
-  #   Either ExtraPython2Package ExtraPython3Package -> Derivation
+  #   Either ExtraPython3Package ExtraPython3Package -> Derivation
   buildPythonEnv = vimDepName: pyPackages: extraPackages: let
-    pluginPythonPackages = getRemoteDeps vimDepName (sortedPlugins);
+    pluginPythonPackages = getRemoteDeps vimDepName (filter (plugin: hasAttr vimDepName plugin.remote) sortedPlugins);
   in pyPackages.python.withPackages (ps:
       [ ps.pynvim ]
       ++ (extraPackages ps)
@@ -529,7 +431,7 @@ let
 
   # requiresRemoteHost :: String -> Bool
   requiresRemoteHost = remoteHost: any (plugin: let
-    in plugin.remote.${remoteHost} == true) sortedPlugins;
+    in plugin.remote.${remoteHost} or false == true) sortedPlugins;
 
   # mkLangPackagesOption :: String -> a -> String -> Option
   mkLangPackagesOption = lang: langPackageType: examplePackages: mkOption {
@@ -593,9 +495,6 @@ let
   extraPython3PackageType = mkLangPackagesType
     "python3"
     (val: isList (val pkgs.python3Packages));
-  extraPython2PackageType = mkLangPackagesType
-    "python2"
-    (val: isList (val pkgs.python2Packages));
   extraLuaPackageType = mkLangPackagesType
     "lua"
     (val: true);
@@ -603,55 +502,6 @@ let
   #   ({Derivation} -> [Derivation])
   langPackagesMergeFunc = loc: defs:
     packageSet: foldr (a: b: a ++ b) [] (map (f: f packageSet) (getValues defs));
-
-  sourcePin.options = {
-    url = mkOption {
-      type = with types; str;
-      description = ''
-        `pkgs.fetchgit-compatible` git url string.
-      '';
-    };
-    rev = mkOption {
-      type = with types; str;
-      description = ''
-        `pkgs.fetchgit-compatible` git revision string.
-      '';
-    };
-    sha256 = mkOption {
-      type = with types; str;
-      description = ''
-        `pkgs.fetchgit-compatible` sha256 string.
-      '';
-    };
-    version = mkOption {
-      type = with types; str;
-      description = ''
-        Version string appropriate for a nixpkgs derivation.
-      '';
-    };
-    fetchSubmodules = mkOption {
-      type = with types; bool;
-      default = false;
-      description = ''
-        Whether or not to fetch git submodules.
-      '';
-    };
-    leaveDotGit = mkOption {
-      type = with types; bool;
-      default = false;
-      description = ''
-        Whether or not to leave the .git directory intact.
-      '';
-    };
-    # TODO This isn't really used right now, but is intended to allow for
-    # supporting multiple types of fetch instead of just git.
-    fetchType = mkOption {
-      type = with types; enum [ "git" "github" ];
-      description = ''
-        Type of the fetcher to use.
-      '';
-    };
-  };
 
   nvimFile = { name, config, ... }: {
     options = {
@@ -714,9 +564,8 @@ let
       description = ''
         List of other vim plugins that are dependencies of this plugin.
 
-        Items can be either strings representings vim-plug-compatible git
-        repository urls, base `vimPlugins` attribute names, or existing vim
-        plugin derivations.
+        Items can either be existing vim plugin derivations, or strings
+        corresponding to `pluginRegistry` attributes.
       '';
       type = with types; listOf (either str package);
       default = [];
@@ -728,8 +577,8 @@ let
         This can be seen as a "soft" form of making this plugin a dependency of
         each of the listed plugins.
 
-        Items must be strings representings either vim-plug-compatible git
-        repository urls, or base `vimPlugins` attribute names.
+        Items can either be existing vim plugin derivations, or strings
+        corresponding to `pluginRegistry` attributes.
       '';
       type = with types; listOf str;
       default = [];
@@ -741,8 +590,8 @@ let
         This can be seen as a "soft" form of making each of the listed plugins
         dependencies of this plugin.
 
-        Items must be strings representings either vim-plug-compatible git
-        repository urls, or base `vimPlugins` attribute names.
+        Items can either be existing vim plugin derivations, or strings
+        corresponding to `pluginRegistry` attributes.
       '';
       type = with types; listOf str;
       default = [];
@@ -757,8 +606,6 @@ let
     };
     luaDeps = mkLangPackagesOption "Lua" extraLuaPackageType "luafilesystem";
     remote =  {
-      python2 = mkRemoteHostOption "Python 2";
-      python2Deps = mkLangPackagesOption "Python 2" extraPython2PackageType "pandas jedi";
       python3 = mkRemoteHostOption "Python 3";
       python3Deps = mkLangPackagesOption "Python 3" extraPython3PackageType "python-language-server";
     };
@@ -798,49 +645,14 @@ let
       description = ''
         Source of the vim plugin.
 
-        Leave as `null` to let the module infer the source as a vim-plug
-        shortname from the name of this `pluginConfig` attribute.
-
-        Otherwise, set to a string representing a vim-plug-compatible git
-        repository url, an existing vim plugin derivation, or to a Nix store
-        path to build a vim plugin derivation from.
-
-        If left null or set to a string, a pin for the source must be present
-        in `sourcePins` in order to build the neovim configuration.
+        Set to an existing vim plugin derivation, or to a Nix store path to
+        build a vim plugin derivation from. Otherwise, leave this as `null` and
+        set the `dir` configuration option for this plugin instead.
       '';
       default = null;
       type = with types; nullOr (either path (either package str));
     };
-    branch = mkOption {
-      description = ''
-        Branch of the git source to fetch and use. The `tag` and `commit`
-        options effectively override this.
-
-        Leave as `null` to simply use the branch of `HEAD` (typically, `master`).
-      '';
-      type = with types; nullOr str;
-      default = null;
-    };
-    tag = mkOption {
-      description = ''
-        Tag of the git source to fetch and use. The `commit` option effectively
-        overrides this.
-
-        Leave as `null` to simply use the `HEAD`.
-      '';
-      type = with types; nullOr str;
-      default = null;
-    };
-    commit = mkOption {
-      description = ''
-        Commit of the git source to fetch and use.
-
-        Leave as `null` to simply use the `HEAD`.
-      '';
-      type = with types; nullOr str;
-      default = null;
-    };
-    # TODO replace this by just handling strings in source, maybe?
+    # TODO replace this by just handling non-Nix-store paths in source, maybe?
     dir = mkOption {
       description = ''
         If set, specifies a directory path that the plugin should be loaded
@@ -939,45 +751,17 @@ in
       description = ''
         An attribute set describing the available/known neovim plugins.
       '';
-      # Effectively defaulted to defaultPluginRegistry later
       default = {};
       # TODO: Load this from a CI-tested example file?
       example = literalExpression ''
-        {
-          # A "source" plugin, where the source is inferred from the attribute
-          # name, treated as a vim-plug-compatible shortname
-          "bagrat/vim-buffet" = {
+        (let
+          inherit (pkgs) vimPlugins;
+          pins = import ./niv/sources.nix { };
+        in {
+          nvim-moonmaker = {
             enable = true;
-            dependencies = [
-              "lightline-vim"
-            ];
-            # The specific commit to use for the source checkout
-            commit = "044f2954a5e49aea8625973de68dda8750f1c42d";
-            extraConfig = '''
-              " Customize vim-workspace colours based on gruvbox colours
-              function g:WorkspaceSetCustomColors()
-                highlight WorkspaceBufferCurrentDefault guibg=#a89984 guifg=#282828
-                highlight WorkspaceBufferActiveDefault guibg=#504945 guifg=#a89984
-                highlight WorkspaceBufferHiddenDefault guibg=#3c3836 guifg=#a89984
-                highlight WorkspaceBufferTruncDefault guibg=#3c3836 guifg=#b16286
-                highlight WorkspaceTabCurrentDefault guibg=#689d6a guifg=#282828
-                highlight WorkspaceTabHiddenDefault guibg=#458588 guifg=#282828
-                highlight WorkspaceFillDefault guibg=#3c3836 guifg=#3c3836
-                highlight WorkspaceIconDefault guibg=#3c3836 guifg=#3c3836
-              endfunction
-              " vim-workspace
-              " Disable lightline's tabline functionality, as it conflicts with this
-              let g:lightline.enable = { 'tabline': 0 }
-              " Prettify
-              let g:workspace_powerline_separators = 1
-              let g:workspace_tab_icon = "\uf00a"
-              let g:workspace_left_trunc_icon = "\uf0a8"
-              let g:workspace_right_trunc_icon = "\uf0a9"
-            ''';
-          };
-
-          "Shados/nvim-moonmaker" = {
-            enable = false;
+            # Build plugin derivation from a Niv source pins attribute set
+            source = config.sn.programs.neovim.lib.buildVimPluginFromNiv pins "nvim-moonmaker";
             # Decide whether or not to load at run-time based on the result of
             # a VimL expression
             condition = "executable('moonc')";
@@ -985,12 +769,14 @@ in
 
           vim-auto-save = {
             enable = true;
+            source = vimPlugins.vim-auto-save;
             # Lazily load on opening a tex file
             for = "tex";
           };
 
           nerdtree = {
             enable = true;
+            source = vimPlugins.nerdtree;
             # Lazily load on command usage
             on_cmd = "NERDTreeToggle";
             extraConfig = '''
@@ -999,9 +785,6 @@ in
               let NERDTreeDirArrows = 1
             ''';
           };
-
-          # Use upstream LanguageClient-neovim derivation
-          LanguageClient-neovim.enable = true;
 
           # A "path" plugin built from a source path
           "nginx.vim" = {
@@ -1018,6 +801,7 @@ in
 
           # A plugin configured but not enabled
           vim-devicons = {
+            source = vimPlugins.vim-devicons;
             # vim-devicons needs to be loaded after these plugins, if they
             # are being used, as per its installation guide
             after = [
@@ -1026,32 +810,8 @@ in
               "vimfiler" "vim-flagship"
             ];
           };
-        }
+        })
       '';
-    };
-    baseVimPlugins = mkOption {
-      # Can't make this e.g. `attrsOf package` because there *may* be non-package
-      # members, and there *definitely* are in nixpkgs.vimPlugins
-      type = with types; attrs;
-      # We need to filter out deprecated aliases, as otherwise we'll trigger a `throw` later
-      default = let
-        filterDeprecated = filterAttrs (name: plugin: !(elem name deprecatedPlugins));
-        deprecatedPlugins = attrNames (builtins.fromJSON
-          (builtins.readFile (pkgs.path + "/pkgs/applications/editors/vim/plugins/deprecated.json")));
-      in filterDeprecated pkgs.vimPlugins;
-      defaultText = "base vimPlugins without deprecated aliases";
-      description = ''
-        Base set of vim plugin derivations to resolve string/name-based plugin
-        dependencies against.
-      '';
-    };
-    sourcePins = mkOption {
-      type = with types; attrsOf (submodule sourcePin);
-      description = ''
-        Attribute set of source pins for vim plugins. Attribute names should
-        map directly to `pluginRegistry` attribute names.
-      '';
-      default = {};
     };
 
     mergePlugins = mkOption {
@@ -1156,28 +916,6 @@ in
       '';
     };
 
-    withPython2 = mkOption {
-      type = types.bool;
-      default = requiresRemoteHost "python2";
-      description = ''
-        Enable Python 2 provider. Set to `true` to use Python 2 plugins.
-      '';
-    };
-    extraPython2Packages = mkOption {
-      type = extraPython2PackageType;
-      default = (_: []);
-      defaultText = "ps: []";
-      example = literalExpression "(ps: with ps; [ pandas jedi ])";
-      description = ''
-        A function in `python.withPackages` format, which returns a list of
-        Python 2 packages required for your plugins to work.
-
-        Using the per-plugin `python2Deps` is strongly preferred; this should
-        only be necessary if you need some Python 2 packages made available to
-        neovim for a plugin that is *not* being managed by this module.
-      '';
-    };
-
     # Generic package options
     extraBinPackages = mkOption {
       type = with types; listOf package;
@@ -1207,36 +945,6 @@ in
 
     # Internal, read-only options {{{
     # These are basically implementation details of the module.
-    fullPluginRegistry = mkOption {
-      type = with types; attrsOf (submodule pluginConfigType);
-      readOnly = true;
-      internal = true;
-      visible = false;
-      description = ''
-        Base `pluginRegistry`, with any dependency plugins not already in the
-        registry added to it.
-      '';
-    };
-    pluginSourcesJson = mkOption {
-      type = with types; path;
-      readOnly = true;
-      internal = true;
-      visible = false;
-      description = ''
-        Path to JSON file mapping plugin names to source objects, used to
-        prefetch sources for plugins. Generated automatically by this module.
-      '';
-    };
-    requiredPluginsJson = mkOption {
-      type = with types; path;
-      readOnly = true;
-      internal = true;
-      visible = false;
-      description = ''
-        Path to JSON file listing required plugins, used to prefetch sources
-        for plugins. Generated automatically by this module.
-      '';
-    };
     depIndexJson = mkOption {
       type = with types; path;
       readOnly = true;
@@ -1267,17 +975,6 @@ in
         wrapper to generate the remote plugin manifest.
       '';
     };
-    python2Env = mkOption {
-      type = with types; nullOr package;
-      readOnly = true;
-      internal = true;
-      visible = false;
-      description = ''
-        Generated Python 2 environment containing the plugin host package, the
-        required per-plugin Python 2 depenedencies, and the specified
-        `extraPython2Packages`.
-      '';
-    };
     python3Env = mkOption {
       type = with types; nullOr package;
       readOnly = true;
@@ -1286,7 +983,7 @@ in
       description = ''
         Generated Python 3 environment containing the plugin host package, the
         required per-plugin Python 2 depenedencies, and the specified
-        `extraPython2Packages`.
+        `extraPython3Packages`.
       '';
     };
     luaModules = mkOption {
@@ -1301,7 +998,7 @@ in
     };
     binDeps = mkOption {
       type = with types; listOf package;
-      readOnly = true;
+      default = [];
       internal = true;
       visible = false;
       description = ''
@@ -1340,40 +1037,22 @@ in
   };
 
   config = {
-    # TODO this would be nice to have; but NixOS assertions are implemented as
-    # an external module themselves, not an internal/bultin module as part of
-    # evalModules... well, I could eval with it.
-    # assertions = [
-    #   (let
-    #     requiredSourcePlugins = flip filterAttrs requiredPlugins (n: _: hasAttr n sourcePlugins);
-    #     missingSources = filter (n: !hasAttr n config.sourcePins) (attrNames requiredSourcePlugins);
-    #   in { assertion = all (n: hasAttr n config.sourcePins) (attrNames requiredSourcePlugins);
-    #     message = "Some plugins are missing sources: #{concatStringsSep ', ' missingSources}";
-    #   })
-    # ];
-    # Set here because it shouldn't be mkOptionDefault
-    pluginRegistry = defaultPluginRegistry;
-
     # Setting read-only options
     neovimRC = pkgs.writeText "init.lua" initScript;
     pluginOnlyRC = pkgs.writeText "plugin-only-init.lua" pluginOnlyInitScript;
-    pluginSourcesJson = pkgs.writeText "nvim-plugin-configs.json" (builtins.toJSON pluginSourceMap);
-    requiredPluginsJson = pkgs.writeText "nvim-required-plugins.json" (builtins.toJSON (attrNames requiredPlugins));
     depIndexJson = pkgs.writeText "nvim-dependency-index.json" (builtins.toJSON (depIndex));
-    python2Env = buildPythonEnv "python2Deps" pkgs.pythonPackages config.extraPython2Packages;
     python3Env = buildPythonEnv "python3Deps" pkgs.python3Packages config.extraPython3Packages;
-    luaModules = concatMap (plugin: singleton plugin.luaDeps) sortedPlugins;
+    luaModules = concatMap (plugin: singleton plugin.luaDeps) (filter (plugin: plugin ? luaDeps) sortedPlugins);
     binDeps = concatMap (plugin: plugin.binDeps) sortedPlugins;
     wrappedNeovim = let
       configureNeovim = pkgs.callPackage ./wrapper.nix {
         neovim-unwrapped = config.neovimPackage;
       };
     in configureNeovim config;
-    generatePluginManifest = any (v: v) (map (requiresRemoteHost) [ "python2" "python3" ]);
-    fullPluginRegistry = registryWithDeps (config.pluginRegistry);
+    generatePluginManifest = any (v: v) (map (requiresRemoteHost) [ "python3" ]);
 
     lib = {
-      inherit (nvimLib) escapedName pinPathFor pinFromPath fillPinsFromDir;
+      inherit (nvimLib) buildVimPluginFromNiv;
       inherit buildPluginFromPath compileMoon;
 
       optionsJSON = let
@@ -1410,15 +1089,12 @@ in
           else if builtins.isList x then map substFunction x
           else if lib.isFunction x then "<function>"
           else x;
-      in builtins.unsafeDiscardStringContext (builtins.toJSON (optionsList));
+      in unsafeDiscardStringContext (builtins.toJSON (optionsList));
     };
 
     # Some debuggging outputs
     debug = {
-      sortedPluginList = pkgs.writeText "vim-plugin-sorted-list.json" (builtins.toJSON sortedPlugins);
-      inherit localNvimFiles composedRegistry;
-      pluginBuckets = pkgs.writeText "buckets.json" (builtins.toJSON rawPluginBuckets);
-      mergedPluginBuckets = pkgs.writeText "merged-buckets.json" (builtins.toJSON mergedBuckets);
+      inherit localNvimFiles drvRegistry requiredPlugins sortedPlugins registryByPath rawPluginBuckets mergedBuckets;
     };
   };
 }

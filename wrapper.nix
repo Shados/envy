@@ -1,6 +1,7 @@
 { stdenv, lib, makeWrapper
 , writeText
 , luajit
+, neovimUtils
 , neovim-unwrapped
 }:
 let
@@ -9,7 +10,8 @@ let
   let
 
     bin = "${neovim-unwrapped}/bin/nvim";
-    binPath = makeBinPath (cfg.binDeps ++ cfg.extraBinPackages);
+    binPath = makeBinPath allBinDeps;
+    allBinDeps = cfg.binDeps ++ cfg.extraBinPackages;
 
     luaPathPrefix = drv: "${drv}/share/lua/${luajit.luaversion}";
     luaCPathPrefix = drv: "${drv}/lib/lua/${luajit.luaversion}";
@@ -20,19 +22,18 @@ let
     );
 
     fullNvimWrapperArgs = baseNvimWrapperArgs ++ [
-      ''--add-flags "--cmd \"luafile ${cfg.neovimRC}\""''
+      ''--add-flags'' ''"--cmd \"luafile ${cfg.neovimRC}\""''
       "--argv0 nvim"
-    ]
-    ++ optional (cfg.generatePluginManifest)
       "--set NVIM_SYSTEM_RPLUGIN_MANIFEST $out/rplugin.vim"
-    ;
+    ];
 
     baseNvimWrapperArgs = [
-      ''"$(readlink -v --canonicalize-existing "${bin}")"''
+      bin
       "$out/bin/nvim"
+      ''--add-flags'' ''"--cmd \"lua ${providerLuaRc}\""''
     ]
-    ++ optional (stringLength binPath > 0) (makeSuffixArg "PATH" ":" binPath)
-    ++ optionals (length cfg.luaModules > 0) [
+    ++ optional (allBinDeps != []) (makeSuffixArg "PATH" ":" binPath)
+    ++ optionals (cfg.luaModules != []) [
       (makeSuffixListArg "LUA_PATH" ";" (makeLuaPath luaEnv))
       (makeSuffixListArg "LUA_CPATH" ";" (makeLuaCPath luaEnv))
     ]
@@ -44,6 +45,14 @@ let
       makeWrapper \
         ${concatStringsSep " \\\n  " wrapperArgs}
     '';
+
+    providerLuaRc = neovimUtils.generateProviderRc {
+      inherit (cfg) withPython3;
+      withNodeJs = false;
+      withPerl = false;
+      withRuby = false;
+    };
+
   in stdenv.mkDerivation rec {
     name = "neovim-configured-${lib.getVersion neovim-unwrapped}";
     buildCommand = ''
@@ -54,20 +63,16 @@ let
       fi
 
       ${makeNvimWrapper baseNvimWrapperArgs}
-    '' + optionalString (length cfg.luaModules > 0) ''
-      makeWrapper ${cfg.python3Env}/bin/python3 $out/bin/nvim-python3 --unset PYTHONPATH
     ''
-      + optionalString (!stdenv.isDarwin) ''
-      # copy and patch the original neovim.desktop file
-      mkdir -p $out/share/applications
-      substitute ${neovim-unwrapped}/share/applications/nvim.desktop $out/share/applications/nvim.desktop \
-        --replace 'TryExec=nvim' "TryExec=$out/bin/nvim" \
-        --replace 'Name=Neovim' 'Name=WrappedNeovim'
-    '' + optionalString cfg.withPython2 ''
-      makeWrapper ${cfg.python2Env}/bin/python $out/bin/nvim-python --unset PYTHONPATH
-    '' + optionalString cfg.withPython3 ''
-      makeWrapper ${cfg.python3Env}/bin/python3 $out/bin/nvim-python3 --unset PYTHONPATH
-    '' + optionalString (cfg.generatePluginManifest) ''
+    + optionalString (stdenv.isLinux) ''
+        mkdir -p $out/share/applications/
+        substitute ${neovim-unwrapped}/share/applications/nvim.desktop $out/share/applications/nvim.desktop \
+          --replace 'Name=Neovim' 'Name=Neovim wrapper'
+    ''
+    + lib.optionalString cfg.withPython3 ''
+        makeWrapper ${cfg.python3Env.interpreter} $out/bin/nvim-python3 --unset PYTHONPATH --unset PYTHONSAFEPATH
+    ''
+    + optionalString (cfg.generatePluginManifest) ''
       echo "Generating remote plugin manifest"
       export NVIM_RPLUGIN_MANIFEST=$out/rplugin.vim
       export HOME="$PWD"
@@ -87,8 +92,8 @@ let
       fi
       unset NVIM_RPLUGIN_MANIFEST
     '' + ''
-      # this relies on a patched neovim, see
-      # https://github.com/neovim/neovim/issues/9413
+      rm $out/bin/nvim
+      touch $out/rplugin.vim
       ${makeNvimWrapper fullNvimWrapperArgs}
     '';
 

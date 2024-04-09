@@ -1,9 +1,8 @@
 { config, lib, pkgs, ... }:
 {
   pluginRegistry = {
-    # Inter-plugin dependencies; the items should preferably be the names of
-    # `pluginRegistry` or `vim.vimPlugins` items, but can alternatively be Vim
-    # plugin derivations.
+    # Inter-plugin dependencies; the items should either be `pluginRegistry`
+    # attribute names or vim plugin derivations.
     neosnippet-snippets.dependencies = [ "neosnippet-vim" ];
     # Specifies that a plugin needs external executables from the given
     # packages made available in neovim's $PATH.
@@ -22,8 +21,8 @@
     # specific language (here, Python 3).
     denite-nvim.remote.python3 = true;
     # Pulls in plugin-host-language dependencies.
-    # Automatically implies `remote.python2 = true;`.
-    aPythonPlugin.remote.python2Deps = ps: with ps; [
+    # Automatically implies `remote.python3 = true;`.
+    aPythonPlugin.remote.python3Deps = ps: with ps; [
       requests
     ];
   };

@@ -9,8 +9,6 @@ Broadly, the process for configuring Envy is:
 2) Enable the plugins you want to use.
 3) Specify any additional dependencies the plugins may have.
 4) Add per-plugin configuration.
-5) Pre-fetch and pin any shortname plugins (see chapter 3).
-
 
 
 ## Non-plugin Configuration
@@ -27,10 +25,6 @@ Envy provides a wide array of options here, so some examples may be helpful:
 ```
 
 ## Enabling Plugins
-You can enable both pre-existing Nix vim plugin derivations (e.g. from
-nixpkgs), and vim plugins on github, both by using
-`pluginRegistry.<pluginName>.enable`.
-
 There are several ways to specify the source for a plugin, depending on what
 you want:
 ```nix

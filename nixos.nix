@@ -1,8 +1,7 @@
 { enabled ? true }:
 { config, lib, pkgs, ... }:
-with lib;
-
 let
+  inherit (lib) mkIf mkOption types;
   cfg = config.sn.programs.neovim;
   vimPkgModule = import ./module.nix pkgs;
 in
@@ -19,7 +18,6 @@ in
   config = mkIf enabled {
     environment.systemPackages = [
       cfg.wrappedNeovim
-      (pkgs.callPackage ./envy-pins-package.nix { })
     ];
   };
 }

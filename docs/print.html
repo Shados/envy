@@ -1,42 +1,28 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js light">
+<html lang="en" class="light" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
         <title>Envy Documentation</title>
-        
-        <meta name="robots" content="noindex" />
-        
-        
+        <meta name="robots" content="noindex">
 
 
         <!-- Custom HTML head -->
         
-
-
-        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#ffffff">
 
-        
         <link rel="icon" href="favicon.svg">
-        
-        
         <link rel="shortcut icon" href="favicon.png">
-        
         <link rel="stylesheet" href="css/variables.css">
         <link rel="stylesheet" href="css/general.css">
         <link rel="stylesheet" href="css/chrome.css">
-        
         <link rel="stylesheet" href="css/print.css" media="print">
-        
 
         <!-- Fonts -->
         <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        
         <link rel="stylesheet" href="fonts/fonts.css">
-        
 
         <!-- Highlight.js Stylesheets -->
         <link rel="stylesheet" href="highlight.css">
@@ -44,19 +30,18 @@
         <link rel="stylesheet" href="ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
-        
 
-        
     </head>
-    <body>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
         <!-- Provide site root to javascript -->
-        <script type="text/javascript">
+        <script>
             var path_to_root = "";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
-        <script type="text/javascript">
+        <script>
             try {
                 var theme = localStorage.getItem('mdbook-theme');
                 var sidebar = localStorage.getItem('mdbook-sidebar');
@@ -72,79 +57,104 @@
         </script>
 
         <!-- Set the theme before any content is loaded, prevents flash -->
-        <script type="text/javascript">
+        <script>
             var theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             var html = document.querySelector('html');
-            html.classList.remove('no-js')
             html.classList.remove('light')
             html.classList.add(theme);
-            html.classList.add('js');
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
         </script>
 
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
         <!-- Hide / unhide sidebar before it is displayed -->
-        <script type="text/javascript">
-            var html = document.querySelector('html');
-            var sidebar = 'hidden';
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
             }
-            html.classList.remove('sidebar-visible');
-            html.classList.add("sidebar-" + sidebar);
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Module Configuration</a></li><li class="chapter-item expanded "><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Packaging Plugins</a></li><li class="chapter-item expanded "><a href="chapter_4.html"><strong aria-hidden="true">4.</strong> Advanced Usage</a></li><li class="spacer"></li><li class="chapter-item expanded affix "><a href="options.html">A. Configuration Options</a></li><li class="chapter-item expanded affix "><a href="tools.html">B. Tools</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Module Configuration</a></li><li class="chapter-item expanded "><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Advanced Usage</a></li><li class="spacer"></li><li class="chapter-item expanded affix "><a href="options.html">A. Configuration Options</a></li></ol>
             </div>
-            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
         </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
 
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
-                
-                <div id="menu-bar-hover-placeholder"></div>
-                <div id="menu-bar" class="menu-bar sticky bordered">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
-                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
                             <i class="fa fa-bars"></i>
-                        </button>
+                        </label>
                         <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
                         </ul>
-                        
                         <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
                         </button>
-                        
                     </div>
 
                     <h1 class="menu-title">Envy Documentation</h1>
 
                     <div class="right-buttons">
-                        
                         <a href="print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
-                        
-                        
+
                     </div>
                 </div>
 
-                
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -152,10 +162,9 @@
                         </ul>
                     </div>
                 </div>
-                
 
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
-                <script type="text/javascript">
+                <script>
                     document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
                     document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
                     Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
@@ -180,7 +189,7 @@ A Nix-based configuration mechanism that allows individual plugin
 configuration to depend on the install-time state of other plugins,
 dependencies, and potentially the system (in NixOS).</li>
 <li><input disabled="" type="checkbox" checked=""/>
-A way to &quot;layer&quot; per-project plugins+configuration on top of per-user, in
+A way to "layer" per-project plugins+configuration on top of per-user, in
 turn on top of per-system (albeit at a large memory cost at install-time).</li>
 <li><input disabled="" type="checkbox" checked=""/>
 A method for existing users of NixOS/home-manager to tightly integrate
@@ -207,7 +216,7 @@ depend on the system or user-level configuration.</p>
 <p>Trying to reliably manage this cross-language, cross-system complexity using
 <em>anything other than Nix</em> quickly descends into either A) madness, or B)
 compromise. I'm not big on compromise.</p>
-<h1 id="1-basic-usage"><a class="header" href="#1-basic-usage">1. Basic Usage</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="1-basic-usage"><a class="header" href="#1-basic-usage">1. Basic Usage</a></h1>
 <p>The main Envy module can basically be used in three different ways:</p>
 <ol>
 <li>It can be used as a NixOS module, to configure neovim system-wide.</li>
@@ -229,11 +238,21 @@ exposing a <code>sn.programs.neovim.enable</code> option, due to a technical lim
 <p>Add the <code>envy/nixos.nix</code> module to <code>imports</code> in your <code>configuration.nix</code>:</p>
 <pre><code class="language-nix">{ config, lib, pkgs, ... }:
 let
-  envy = (builtins.fetchgit { url = https://github.com/Shados/envy; ref = &quot;master&quot;; });
+  envy = (builtins.fetchgit { url = https://github.com/Shados/envy; ref = "master"; });
 in
 {
   imports = [
-    (import &quot;${envy}/nixos.nix&quot; { })
+    (import "${envy}/nixos.nix" { })
+    ...
+  ];
+  ...
+}
+</code></pre>
+<p>Or, if you've added envy as a flake input and have flake inputs available in your module arguments:</p>
+<pre><code class="language-nix">{ config, lib, inputs, pkgs, ... }:
+{
+  imports = [
+    (envy.nixosModules.default { })
     ...
   ];
   ...
@@ -243,40 +262,34 @@ in
 <p>Add the <code>envy/home-manager.nix</code> module to <code>imports</code> in your <code>configuration.nix</code>:</p>
 <pre><code class="language-nix">{ config, lib, pkgs, ... }:
 let
-  envy = (builtins.fetchgit { url = https://github.com/Shados/envy; ref = &quot;master&quot;; });
+  envy = (builtins.fetchgit { url = https://github.com/Shados/envy; ref = "master"; });
 in
 {
   imports = [
-    (import &quot;${envy}/home-manager.nix&quot; { mergeNixosDefinitions = false; })
+    (import "${envy}/home-manager.nix" { })
     ...
   ];
   ...
 }
 </code></pre>
-<p><code>mergeNixosDefinitions</code> controls whether or not any <code>sn.programs.neovim</code>
-settings from the current system's NixOS configuration should be merged into
-the home-manager defintions. This allows for &quot;layering&quot; user-level neovim
-configuration on top of the system-wide config. It is <code>false</code> by default.</p>
-<p>NOTE: You are likely better off just directly including your NixOS
-envy-configuration module in your hm config, if you want to layer the two, but
-this approach is not always possible/viable.</p>
+<p>Or, if you've added envy as a flake input and have flake inputs available in your module arguments:</p>
+<pre><code class="language-nix">{ config, lib, inputs, pkgs, ... }:
+{
+  imports = [
+    (envy.homeModules.default { })
+    ...
+  ];
+  ...
+}
+</code></pre>
 <h2 id="standalone-setup"><a class="header" href="#standalone-setup">Standalone Setup</a></h2>
 <p>Usage as a standalone module is slightly more complicated, and is most easily
 done by use of the <code>configuredNeovimModule</code> in Envy's <code>lib</code> module:</p>
 <pre><code class="language-nix">{ nixpkgs ? import &lt;nixpkgs&gt; { } }:
 let
-  envy = (builtins.fetchgit { url = https://github.com/Shados/envy; ref = &quot;master&quot;; });
-  envyLib = (import &quot;${envy}/lib.nix&quot; { inherit nixpkgs; });
+  envy = (builtins.fetchgit { url = https://github.com/Shados/envy; ref = "master"; });
+  envyLib = (import "${envy}/lib.nix" { inherit nixpkgs; });
   envyModule = envyLib.configuredNeovimModule {
-    # Whether or not to merge in Envy config pulled from the current NixOS Envy
-    # module configuration
-    withNixosConfig = false;
-    # Whether or not to merge in Envy config pulled from the current
-    # home-manager-in-NixOS Envy module configuration
-    withNixosHMConfig = false;
-    # Whether or not to merge in Envy config pulled from the current
-    # home-manager Envy module configuration
-    withHMConfig = false;
     nvimConfig = { config, lib, pkgs, ... }: {
       # Envy module config here
       pluginRegistry = {
@@ -293,7 +306,7 @@ nixpkgs.mkShell {
   ];
 }
 </code></pre>
-<h1 id="2-module-configuration"><a class="header" href="#2-module-configuration">2. Module Configuration</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="2-module-configuration"><a class="header" href="#2-module-configuration">2. Module Configuration</a></h1>
 <p>The full set of available configuration options is documented in Appendix A;
 this chapter serves as an overview of the configuration process and provides
 examples of how the options may be used.</p>
@@ -303,11 +316,10 @@ examples of how the options may be used.</p>
 <li>Enable the plugins you want to use.</li>
 <li>Specify any additional dependencies the plugins may have.</li>
 <li>Add per-plugin configuration.</li>
-<li>Pre-fetch and pin any shortname plugins (see chapter 3).</li>
 </ol>
 <h2 id="non-plugin-configuration"><a class="header" href="#non-plugin-configuration">Non-plugin Configuration</a></h2>
 <p>Adapt your non-plugin <code>init.vim</code> configuration to use Envy's module options.</p>
-<p>By &quot;non-plugin&quot; here we mean specifically things that either don't depend
+<p>By "non-plugin" here we mean specifically things that either don't depend
 on/configure <em>any</em> plugin, <em>or</em> that could depend on any one of several plugins
 (in which case, you should use Nix functionality to check which/whether any of
 those plugins are enabled and adapt the generated configuration appropriately).</p>
@@ -316,7 +328,7 @@ those plugins are enabled and adapt the generated configuration appropriately).<
 {
   # Configuration items that should be done prior to any per-plugin configuration
   prePluginConfig = ''
-    let mapleader = &quot;\&lt;Space&gt;&quot;
+    let mapleader = "\&lt;Space&gt;"
     augroup vimrc
       autocmd!
     augroup END
@@ -338,7 +350,7 @@ those plugins are enabled and adapt the generated configuration appropriately).<
     set tabstop=2
     set expandtab
 
-    &quot; Use Ripgrep (rg) for search backend
+    " Use Ripgrep (rg) for search backend
     let g:ackprg = '${pkgs.ripgrep}/bin/rg --vimgrep --smart-case --no-heading --max-filesize=4M'
     set grepprg:${pkgs.ripgrep}/bin/rg\ --vimgrep\ --smart-case\ --no-heading\ --max-filesize=4M
 
@@ -357,63 +369,45 @@ those plugins are enabled and adapt the generated configuration appropriately).<
   # would typically consist of any extra/local contents of .config/nvim/ in a
   # non-Nix neovim setup.
   files = {
-    neosnippets.source = &quot;/my/snippet/files/&quot;;
+    neosnippets.source = "/my/snippet/files/";
   };
 }
 </code></pre>
 <h2 id="enabling-plugins"><a class="header" href="#enabling-plugins">Enabling Plugins</a></h2>
-<p>You can enable both pre-existing Nix vim plugin derivations (e.g. from
-nixpkgs), and vim plugins on github, both by using
-<code>pluginRegistry.&lt;pluginName&gt;.enable</code>.</p>
 <p>There are several ways to specify the source for a plugin, depending on what
 you want:</p>
 <pre><code class="language-nix">{ config, lib, pkgs, ... }:
 {
   pluginRegistry = {
-    # In this case, the name 'ale' is automatically 'resolved' against
-    # pkgs.vimPlugins to select the plugin source
-    ale.enable = true;
-    # In this case, `source` is explicitly pointed to an existing Vim plugin
-    # derivation.
-    &quot;denite.nvim&quot; = {
+    # In this case, `source` is pointed to an existing Vim plugin derivation.
+    "denite.nvim" = {
       enable = true;
       source = pkgs.vimPlugins.denite-nvim;
     };
-    # In this case, the name fails to resolve against pkgs.vimPlugins, so
-    # `source` is automatically inferred from the `name`, on the assumption
-    # that it is a vim-plug-compatible 'shortname', which will be used to
-    # dynamically construct a derivation from a Vim plugin sourced from
-    # https://github.com/Shados/vim-session (see chapter 3).
-    &quot;Shados/vim-session&quot;.enable = true;
-    vim-buffet = {
-      enable = true;
-      # In this case, we again are using a shortname for the source, but we set
-      # it explicitly.
-      source = &quot;bagrat/vim-buffet&quot;;
-      # Additionally, we specify the exact commit we want to pin and use for the git source.
-      # Generally you are better off relying on the separate JSON pin files to
-      # pin to a specific commit, but in this case the version after this
-      # commit has breaking changes, which would mean the configuration of the
-      # plugin would also have to change, meaning that the commit information
-      # is more an element of configuration than of state. 'branch' and 'tag'
-      # are also supported for specifying what to fetch.
-      commit = &quot;044f2954a5e49aea8625973de68dda8750f1c42d&quot;;
-    };
+
+    # In this case, Envy will dynamically construct a derivation using the
+    # given Nix store path as the source.
     localPlugin = {
       enable = true;
-      # In this case, Envy will dynamically construct a derivation using the
-      # given Nix store path as the source.
       source = /some/local/path/or/store/path;
     };
+
+    # Here we instead instruct Envy to have Vim load the plugin from a local
+    # filesystem path at run-time, rather than bundling it into the Nix store.
+    # This is useful for doing plugin development, or if you otherwise want to
+    # use a plugin outside of the Nix store, while still allowing you to
+    # leverage Envy's configuration and dependency specification/resolution
+    # mechanisms.
     inDevPlugin = {
       enable = true;
-      # Here we instead instruct Envy to have Vim load the plugin from a local
-      # filesystem path at run-time, rather than bundling it into the Nix
-      # store. This is useful for doing plugin development, or if you otherwise
-      # want to use a plugin outside of the Nix store, while still allowing you
-      # to leverage Envy's configuration and dependency
-      # specification/resolution mechanisms.
-      dir = &quot;/a/local/path/string&quot;;
+      dir = "/a/local/path/string";
+    };
+
+    # Envy also provides a helper for constructing a vim plugin derivation from
+    # a Niv sources.nix attrset, which you can then use as a source.
+    vim-systemd-syntax = {
+      enable = true;
+      source = config.sn.programs.neovim.lib.buildVimPluginFromNiv (import ./pins { }) "vim-systemd-syntax";
     };
   };
 }
@@ -423,10 +417,9 @@ you want:</p>
 <pre><code class="language-nix">{ config, lib, pkgs, ... }:
 {
   pluginRegistry = {
-    # Inter-plugin dependencies; the items should preferably be the names of
-    # `pluginRegistry` or `vim.vimPlugins` items, but can alternatively be Vim
-    # plugin derivations.
-    neosnippet-snippets.dependencies = [ &quot;neosnippet-vim&quot; ];
+    # Inter-plugin dependencies; the items should either be `pluginRegistry`
+    # attribute names or vim plugin derivations.
+    neosnippet-snippets.dependencies = [ "neosnippet-vim" ];
     # Specifies that a plugin needs external executables from the given
     # packages made available in neovim's $PATH.
     ale.binDeps = with pkgs; [
@@ -437,15 +430,15 @@ you want:</p>
     # Ensures that the specified Lua modules will be made available in
     # neovim's LUA_PATH/LUA_CPATH, meaning that the main neovim process can
     # load them for in-process Lua plugins and scripts to use.
-    &quot;Shados/precog.nvim&quot;.luaDeps = ps: with ps; [
+    "Shados/precog.nvim".luaDeps = ps: with ps; [
       luafilesystem
     ];
     # Flags a plugin as being a 'remote' plugin requiring a plugin host for a
     # specific language (here, Python 3).
     denite-nvim.remote.python3 = true;
     # Pulls in plugin-host-language dependencies.
-    # Automatically implies `remote.python2 = true;`.
-    aPythonPlugin.remote.python2Deps = ps: with ps; [
+    # Automatically implies `remote.python3 = true;`.
+    aPythonPlugin.remote.python3Deps = ps: with ps; [
       requests
     ];
   };
@@ -453,18 +446,20 @@ you want:</p>
 </code></pre>
 <p>Inter-plugin dependencies also determine the order in which Vim plugins are
 loaded at Vim run-time (by <a href="https://github.com/junegunn/vim-plug">vim-plug</a>).</p>
-<p>There are additionally two &quot;soft&quot; dependency options (<code>before</code> and <code>after</code>,
+<p>There are additionally two "soft" dependency options (<code>before</code> and <code>after</code>,
 both of which take lists of plugin names only), that change how plugins are
-ordered if both are enabled, but does not cause the &quot;dependency&quot; to be enabled
-if the &quot;dependent&quot; plugin is, e.g.:</p>
+ordered if both are enabled, but does not cause the "dependency" to be enabled
+if the "dependent" plugin is, e.g.:</p>
 <pre><code class="language-nix">{ config, lib, pkgs, ... }:
 {
   pluginRegistry = {
     # vim-devicons needs to be loaded after these plugins, if they
-    # are being used, as per its installation guide
+    # are being used, as per its installation guide.
+    # Both `after` and `before` can be specified as either `pluginRegistry`
+    # attribute names or vim plugin derivations.
     vim-devicons.after = [
-      &quot;nerdtree&quot; &quot;vim-airline&quot; &quot;ctrlp-vim&quot; &quot;powerline/powerline&quot; &quot;denite-nvim&quot;
-      &quot;unite-vim&quot; &quot;lightline-vim&quot; &quot;vim-startify&quot; &quot;vimfiler&quot; &quot;vim-flagship&quot;
+      "nerdtree" "vim-airline" "ctrlp-vim" "powerline/powerline" "denite-nvim"
+      "unite-vim" "lightline-vim" "vim-startify" "vimfiler" "vim-flagship"
     ];
   };
 }
@@ -479,57 +474,7 @@ lazy-load triggers as their dependents.</p>
 generated nvimrc after the <code>prePluginConfig</code>, before the top-level
 <code>extraConfig</code>, and in the same order plugins are loaded (that is, based on
 dependencies and explicit ordering information).</p>
-<h1 id="3-packaging-plugins"><a class="header" href="#3-packaging-plugins">3. Packaging Plugins</a></h1>
-<p>If you are using any plugins whose source is specified by 'shortname', then you
-will need to prefetch those sources, pin the versions, and provide the pinned
-source information to the Envy module in order for it to construct Vim plugin
-derivations from the sources.</p>
-<h2 id="pinning-sources"><a class="header" href="#pinning-sources">Pinning Sources</a></h2>
-<p>The <code>envy-pins</code> tool is provided to do this. It has a myriad of modes of usage
-depending on how you are set up, but the easiest way to do things is:</p>
-<pre><code class="language-bash"># If you are using the NixOS module, use -n to have envy-pins source the list
-# of 'shortname' # plugins to pin directly from the module
-envy-pins -n ./pin/storage/directory/ update-all
-# -m for the home-manager module
-envy-pins -m ./pin/storage/directory/ update-all
-# -s for the home-manager NixOS sub-module
-envy-pins -s ./pin/storage/directory/ update-all
-</code></pre>
-<p><code>envy-pins</code> will be installed if you enable either the NixOS or home-maanger
-Envy modules. Alternatively, you could access just it with a Nix expression
-like:</p>
-<pre><code class="language-nix">{ pkgs }:
-let
-  envy = (builtins.fetchgit { url = https://github.com/Shados/envy; ref = &quot;master&quot;; });
-in pkgs.callPackage &quot;${envy}/envy-pins-package.nix&quot; { }
-</code></pre>
-<p>In order to limit the installation closure size on systems where it may not
-directly be used (but is still pulled in by an Envy module), <code>envy-pins</code> makes
-use of a <code>nix-shell</code>'s shebang functionality, meaning that it uses Nix to
-download its dependencies at run-time, rather than at install-time. This also
-means that it can be run directly from a checkout of Envy.</p>
-<h2 id="specifying-pins-to-use"><a class="header" href="#specifying-pins-to-use">Specifying Pins To Use</a></h2>
-<p>The top-level <code>sourcePins</code> option maps <code>pluginRegistry</code> attribute names to
-source information. While the individual source pins can be manually set if
-desired, it is easier to make use of the JSON pin files produced by <code>envy-pins</code>
-and the built-in helpers to read them:</p>
-<pre><code class="language-nix">{ config, lib, pkgs, ... }:
-{
-  sourcePins = config.sn.programs.neovim.lib.fillPinsFromDir /directory/of/envy-pins/output/;
-}
-</code></pre>
-<p>or:</p>
-<pre><code class="language-nix">{ config, lib, pkgs, ... }:
-let
-  envy = (builtins.fetchgit { url = https://github.com/Shados/envy; ref = &quot;master&quot;; });
-  envyLib = import &quot;${envy}/lib.nix&quot; { nixpkgs = pkgs; };
-in
-{
-  sourcePins = lib.fillPinsFromDir /directory/of/envy-pins/output/;
-}
-
-</code></pre>
-<h1 id="4-advanced-usage"><a class="header" href="#4-advanced-usage">4. Advanced Usage</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="3-advanced-usage"><a class="header" href="#3-advanced-usage">3. Advanced Usage</a></h1>
 <p>This chapter provides some notes on more complicated usages of Envy.</p>
 <h2 id="plugin-merging"><a class="header" href="#plugin-merging">Plugin Merging</a></h2>
 <p>The <a href="options.html#mergeplugins"><code>mergePlugins</code></a> option can be used to merge
@@ -548,23 +493,61 @@ dependencies).</li>
 merging on a per-plugin basis using the
 <a href="options.html#fullpluginregistrynamemergeable"><code>pluginRegistry.&lt;pluginName&gt;.mergeable</code></a>
 option.</p>
-<h2 id="layering-configuration"><a class="header" href="#layering-configuration">Layering Configuration</a></h2>
-<p>TODO</p>
-<h1 id="a-configuration-options"><a class="header" href="#a-configuration-options">A. Configuration Options</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="a-configuration-options"><a class="header" href="#a-configuration-options">A. Configuration Options</a></h1>
 <div class="option">
-<h3 id="basevimplugins"><a class="header" href="#basevimplugins"><code>baseVimPlugins</code></a></h3>
+<h3 id="_moduleargs"><a class="header" href="#_moduleargs"><code>_module.args</code></a></h3>
 <div class="option_description">
-<p>Base set of vim plugin derivations to resolve string/name-based plugin
-dependencies against.</p>
+<p>Additional arguments passed to each module in addition to ones like <code>lib</code>,
+<code>config</code>, and <code>pkgs</code>, <code>modulesPath</code>.</p>
+<p>This option is also available to all submodules. Submodules do not inherit args
+from their parent module, nor do they provide args to their parent module or
+sibling submodules. The sole exception to this is the argument <code>name</code> which is
+provided by parent modules to a submodule and contains the attribute name the
+submodule is bound to, or a unique generated name if it is not bound to an
+attribute.</p>
+<p>Some arguments are already passed by default, of which the following <em>cannot</em> be
+changed with this option:</p>
+<ul>
+<li>
+<p>{var}<code>lib</code>: The nixpkgs library.</p>
+</li>
+<li>
+<p>{var}<code>config</code>: The results of all options after merging the values from all
+modules together.</p>
+</li>
+<li>
+<p>{var}<code>options</code>: The options declared in all modules.</p>
+</li>
+<li>
+<p>{var}<code>specialArgs</code>: The <code>specialArgs</code> argument passed to <code>evalModules</code>.</p>
+</li>
+<li>
+<p>All attributes of {var}<code>specialArgs</code></p>
+<p>Whereas option values can generally depend on other option values thanks to
+laziness, this does not apply to <code>imports</code>, which must be computed
+statically before anything else.</p>
+<p>For this reason, callers of the module system can provide <code>specialArgs</code>
+which are available during import resolution.</p>
+<p>For NixOS, <code>specialArgs</code> includes {var}<code>modulesPath</code>, which allows you to
+import extra modules from the nixpkgs package tree without having to somehow
+make the module aware of the location of the <code>nixpkgs</code> or NixOS directories.</p>
+<pre><code>{ modulesPath, ... }: {
+  imports = [
+    (modulesPath + "/profiles/minimal.nix")
+  ];
+}
+</code></pre>
+</li>
+</ul>
+<p>For NixOS, the default value for this option includes at least this argument:</p>
+<ul>
+<li>{var}<code>pkgs</code>: The nixpkgs package set according to the {option}<code>nixpkgs.pkgs</code>
+option.</li>
+</ul>
 </div>
 <div class="option_properties">
 <ul>
-<li>
-<p><em>Type:</em> attribute set</p>
-</li>
-<li>
-<p><em>Default:</em> <code>base vimPlugins without aliases</code></p>
-</li>
+<li><em>Type:</em> lazy attribute set of raw value</li>
 </ul>
 </div>
 </div>
@@ -578,10 +561,10 @@ dependencies against.</p>
 <div class="option_properties">
 <ul>
 <li>
-<p><em>Type:</em> one of &quot;vimscript&quot;, &quot;lua&quot;, &quot;moonscript&quot;</p>
+<p><em>Type:</em> one of "vimscript", "lua", "moonscript"</p>
 </li>
 <li>
-<p><em>Default:</em> <code>vimscript</code></p>
+<p><em>Default:</em> <code>"vimscript"</code></p>
 </li>
 </ul>
 </div>
@@ -602,10 +585,10 @@ neovim.</li>
 <div class="option_properties">
 <ul>
 <li>
-<p><em>Type:</em> list of packages</p>
+<p><em>Type:</em> list of package</p>
 </li>
 <li>
-<p><em>Default:</em> <code>{}</code></p>
+<p><em>Default:</em> <code>[ ]</code></p>
 </li>
 </ul>
 </div>
@@ -620,35 +603,10 @@ lines.</p>
 <div class="option_properties">
 <ul>
 <li>
-<p><em>Type:</em> strings concatenated with &quot;\n&quot;</p>
+<p><em>Type:</em> strings concatenated with "\n"</p>
 </li>
 <li>
-<p><em>Default:</em> <code>&quot;&quot;</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="extrapython2packages"><a class="header" href="#extrapython2packages"><code>extraPython2Packages</code></a></h3>
-<div class="option_description">
-<p>A function in <code>python.withPackages</code> format, which returns a list of Python 2
-packages required for your plugins to work.</p>
-<p>Using the per-plugin <code>python2Deps</code> is strongly preferred; this should only be
-necessary if you need some Python 2 packages made available to neovim for a
-plugin that is <em>not</em> being managed by this module.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> python2 packages in `python2.withPackages` format</p>
-</li>
-<li>
-<p><em>Default:</em> <code>ps: []</code></p>
-</li>
-<li>
-<p><em>Example:</em></p>
-<pre><code class="language-nix">(ps: with ps; [ pandas jedi ])
-</code></pre>
+<p><em>Default:</em> <code>""</code></p>
 </li>
 </ul>
 </div>
@@ -668,7 +626,7 @@ plugin that is <em>not</em> being managed by this module.</p>
 <p><em>Type:</em> python3 packages in `python3.withPackages` format</p>
 </li>
 <li>
-<p><em>Default:</em> <code>ps: []</code></p>
+<p><em>Default:</em> <code>"ps: []"</code></p>
 </li>
 <li>
 <p><em>Example:</em></p>
@@ -687,26 +645,26 @@ these would typically be locally-managed files in the <code>~/.config/nvim</code
 <div class="option_properties">
 <ul>
 <li>
-<p><em>Type:</em> attribute set of submodules</p>
+<p><em>Type:</em> attribute set of (submodule)</p>
 </li>
 <li>
-<p><em>Default:</em> <code>{}</code></p>
+<p><em>Default:</em> <code>{ }</code></p>
 </li>
 <li>
 <p><em>Example:</em></p>
 <pre><code class="language-nix">{
   autoload.source = ./neovim/autoload;
   ftplugin.source = ./neovim/ftplugin;
-  &quot;neosnippets/nix.snip&quot;.text = ''
+  "neosnippets/nix.snip".text = ''
     snippet nxo
     abbr    NixOS Module Option
     	mkOption {
     		type = with types; ''${1:str};
-    		default = &quot;''${2}&quot;;
+    		default = "''${2}";
     		description = ''
     		  ''${3}
     		'';
-    		example = &quot;''${4}''${0}&quot;;
+    		example = "''${4}''${0}";
     	};
   '';
 }
@@ -768,7 +726,7 @@ Defaults to the attribute name.</p>
 <div class="option_properties">
 <ul>
 <li>
-<p><em>Type:</em> null or strings concatenated with &quot;\n&quot;</p>
+<p><em>Type:</em> null or strings concatenated with "\n"</p>
 </li>
 <li>
 <p><em>Default:</em> <code>null</code></p>
@@ -779,13 +737,18 @@ Defaults to the attribute name.</p>
 <div class="option">
 <h3 id="mergeplugins"><a class="header" href="#mergeplugins"><code>mergePlugins</code></a></h3>
 <div class="option_description">
-<p>Whether or not to collect plugins into &quot;buckets&quot; based upon their position in
+<p>Whether or not to collect plugins into "buckets" based upon their position in
 the load order, and then merge those which can be merged, in order to minimise
 the number of directories added to vim's <code>runtimepath</code>, decreasing startup time.</p>
 </div>
 <div class="option_properties">
 <ul>
-<li><em>Type:</em> boolean</li>
+<li>
+<p><em>Type:</em> boolean</p>
+</li>
+<li>
+<p><em>Default:</em> <code>false</code></p>
+</li>
 </ul>
 </div>
 </div>
@@ -800,7 +763,7 @@ the number of directories added to vim's <code>runtimepath</code>, decreasing st
 <p><em>Type:</em> package</p>
 </li>
 <li>
-<p><em>Default:</em> <code>pkgs.neovim-unwrapped</code></p>
+<p><em>Default:</em> <code>"pkgs.neovim-unwrapped"</code></p>
 </li>
 </ul>
 </div>
@@ -813,97 +776,70 @@ the number of directories added to vim's <code>runtimepath</code>, decreasing st
 <div class="option_properties">
 <ul>
 <li>
-<p><em>Type:</em> attribute set of submodules</p>
+<p><em>Type:</em> attribute set of (submodule)</p>
 </li>
 <li>
-<p><em>Default:</em> <code>{}</code></p>
+<p><em>Default:</em> <code>{ }</code></p>
 </li>
 <li>
 <p><em>Example:</em></p>
-<pre><code class="language-nix">{
-  # A &quot;source&quot; plugin, where the source is inferred from the attribute
-  # name, treated as a vim-plug-compatible shortname
-  &quot;bagrat/vim-buffet&quot; = {
+<pre><code class="language-nix">(let
+  inherit (pkgs) vimPlugins;
+  pins = import ./niv/sources.nix { };
+in {
+  nvim-moonmaker = {
     enable = true;
-    dependencies = [
-      &quot;lightline-vim&quot;
-    ];
-    # The specific commit to use for the source checkout
-    commit = &quot;044f2954a5e49aea8625973de68dda8750f1c42d&quot;;
-    extraConfig = ''
-      &quot; Customize vim-workspace colours based on gruvbox colours
-      function g:WorkspaceSetCustomColors()
-        highlight WorkspaceBufferCurrentDefault guibg=#a89984 guifg=#282828
-        highlight WorkspaceBufferActiveDefault guibg=#504945 guifg=#a89984
-        highlight WorkspaceBufferHiddenDefault guibg=#3c3836 guifg=#a89984
-        highlight WorkspaceBufferTruncDefault guibg=#3c3836 guifg=#b16286
-        highlight WorkspaceTabCurrentDefault guibg=#689d6a guifg=#282828
-        highlight WorkspaceTabHiddenDefault guibg=#458588 guifg=#282828
-        highlight WorkspaceFillDefault guibg=#3c3836 guifg=#3c3836
-        highlight WorkspaceIconDefault guibg=#3c3836 guifg=#3c3836
-      endfunction
-      &quot; vim-workspace
-      &quot; Disable lightline's tabline functionality, as it conflicts with this
-      let g:lightline.enable = { 'tabline': 0 }
-      &quot; Prettify
-      let g:workspace_powerline_separators = 1
-      let g:workspace_tab_icon = &quot;\uf00a&quot;
-      let g:workspace_left_trunc_icon = &quot;\uf0a8&quot;
-      let g:workspace_right_trunc_icon = &quot;\uf0a9&quot;
-    '';
-  };
-
-  &quot;Shados/nvim-moonmaker&quot; = {
-    enable = false;
+    # Build plugin derivation from a Niv source pins attribute set
+    source = config.sn.programs.neovim.lib.buildVimPluginFromNiv pins "nvim-moonmaker";
     # Decide whether or not to load at run-time based on the result of
     # a VimL expression
-    condition = &quot;executable('moonc')&quot;;
+    condition = "executable('moonc')";
   };
 
   vim-auto-save = {
     enable = true;
+    source = vimPlugins.vim-auto-save;
     # Lazily load on opening a tex file
-    for = &quot;tex&quot;;
+    for = "tex";
   };
 
   nerdtree = {
     enable = true;
+    source = vimPlugins.nerdtree;
     # Lazily load on command usage
-    on_cmd = &quot;NERDTreeToggle&quot;;
+    on_cmd = "NERDTreeToggle";
     extraConfig = ''
-      &quot; Prettify NERDTree
+      " Prettify NERDTree
       let NERDTreeMinimalUI = 1
       let NERDTreeDirArrows = 1
     '';
   };
 
-  # Use upstream LanguageClient-neovim derivation
-  LanguageClient-neovim.enable = true;
-
-  # A &quot;path&quot; plugin built from a source path
-  &quot;nginx.vim&quot; = {
+  # A "path" plugin built from a source path
+  "nginx.vim" = {
     enable = true;
     source = ../nvim-files/local/nginx;
   };
 
-  # A &quot;local&quot; plugin not directly managed by Nix, merely loaded at nvim
+  # A "local" plugin not directly managed by Nix, merely loaded at nvim
   # run-time from the specified directory
-  &quot;devplugin&quot; = {
+  "devplugin" = {
     enable = true;
-    dir = &quot;/home/shados/projects/vim/devplugin&quot;;
+    dir = "/home/shados/projects/vim/devplugin";
   };
 
   # A plugin configured but not enabled
   vim-devicons = {
+    source = vimPlugins.vim-devicons;
     # vim-devicons needs to be loaded after these plugins, if they
     # are being used, as per its installation guide
     after = [
-      &quot;nerdtree&quot; &quot;vim-airline&quot; &quot;ctrlp-vim&quot; &quot;powerline/powerline&quot;
-      &quot;denite-nvim&quot; &quot;unite-vim&quot; &quot;lightline-vim&quot; &quot;vim-startify&quot;
-      &quot;vimfiler&quot; &quot;vim-flagship&quot;
+      "nerdtree" "vim-airline" "ctrlp-vim" "powerline/powerline"
+      "denite-nvim" "unite-vim" "lightline-vim" "vim-startify"
+      "vimfiler" "vim-flagship"
     ];
   };
-}
+})
 </code></pre>
 </li>
 </ul>
@@ -916,7 +852,12 @@ the number of directories added to vim's <code>runtimepath</code>, decreasing st
 </div>
 <div class="option_properties">
 <ul>
-<li><em>Type:</em> boolean</li>
+<li>
+<p><em>Type:</em> boolean</p>
+</li>
+<li>
+<p><em>Default:</em> <code>false</code></p>
+</li>
 </ul>
 </div>
 </div>
@@ -924,18 +865,18 @@ the number of directories added to vim's <code>runtimepath</code>, decreasing st
 <h3 id="pluginregistrynameafter"><a class="header" href="#pluginregistrynameafter"><code>pluginRegistry.&lt;name&gt;.after</code></a></h3>
 <div class="option_description">
 <p>List of other vim plugins that this plugin should be loaded <em>after</em>.</p>
-<p>This can be seen as a &quot;soft&quot; form of making each of the listed plugins
+<p>This can be seen as a "soft" form of making each of the listed plugins
 dependencies of this plugin.</p>
-<p>Items must be strings representings either vim-plug-compatible git repository
-urls, or base <code>vimPlugins</code> attribute names.</p>
+<p>Items can either be existing vim plugin derivations, or strings corresponding to
+<code>pluginRegistry</code> attributes.</p>
 </div>
 <div class="option_properties">
 <ul>
 <li>
-<p><em>Type:</em> list of strings</p>
+<p><em>Type:</em> list of string</p>
 </li>
 <li>
-<p><em>Default:</em> <code>{}</code></p>
+<p><em>Default:</em> <code>[ ]</code></p>
 </li>
 </ul>
 </div>
@@ -944,18 +885,18 @@ urls, or base <code>vimPlugins</code> attribute names.</p>
 <h3 id="pluginregistrynamebefore"><a class="header" href="#pluginregistrynamebefore"><code>pluginRegistry.&lt;name&gt;.before</code></a></h3>
 <div class="option_description">
 <p>List of other vim plugins that this plugin should be loaded <em>before</em>.</p>
-<p>This can be seen as a &quot;soft&quot; form of making this plugin a dependency of each of
+<p>This can be seen as a "soft" form of making this plugin a dependency of each of
 the listed plugins.</p>
-<p>Items must be strings representings either vim-plug-compatible git repository
-urls, or base <code>vimPlugins</code> attribute names.</p>
+<p>Items can either be existing vim plugin derivations, or strings corresponding to
+<code>pluginRegistry</code> attributes.</p>
 </div>
 <div class="option_properties">
 <ul>
 <li>
-<p><em>Type:</em> list of strings</p>
+<p><em>Type:</em> list of string</p>
 </li>
 <li>
-<p><em>Default:</em> <code>{}</code></p>
+<p><em>Default:</em> <code>[ ]</code></p>
 </li>
 </ul>
 </div>
@@ -969,45 +910,10 @@ urls, or base <code>vimPlugins</code> attribute names.</p>
 <div class="option_properties">
 <ul>
 <li>
-<p><em>Type:</em> list of packages</p>
+<p><em>Type:</em> list of package</p>
 </li>
 <li>
-<p><em>Default:</em> <code>{}</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="pluginregistrynamebranch"><a class="header" href="#pluginregistrynamebranch"><code>pluginRegistry.&lt;name&gt;.branch</code></a></h3>
-<div class="option_description">
-<p>Branch of the git source to fetch and use. The <code>tag</code> and <code>commit</code> options
-effectively override this.</p>
-<p>Leave as <code>null</code> to simply use the branch of <code>HEAD</code> (typically, <code>master</code>).</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or string</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="pluginregistrynamecommit"><a class="header" href="#pluginregistrynamecommit"><code>pluginRegistry.&lt;name&gt;.commit</code></a></h3>
-<div class="option_description">
-<p>Commit of the git source to fetch and use.</p>
-<p>Leave as <code>null</code> to simply use the <code>HEAD</code>.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or string</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
+<p><em>Default:</em> <code>[ ]</code></p>
 </li>
 </ul>
 </div>
@@ -1036,16 +942,16 @@ plugin.</p>
 <h3 id="pluginregistrynamedependencies"><a class="header" href="#pluginregistrynamedependencies"><code>pluginRegistry.&lt;name&gt;.dependencies</code></a></h3>
 <div class="option_description">
 <p>List of other vim plugins that are dependencies of this plugin.</p>
-<p>Items can be either strings representings vim-plug-compatible git repository
-urls, base <code>vimPlugins</code> attribute names, or existing vim plugin derivations.</p>
+<p>Items can either be existing vim plugin derivations, or strings corresponding to
+<code>pluginRegistry</code> attributes.</p>
 </div>
 <div class="option_properties">
 <ul>
 <li>
-<p><em>Type:</em> list of string or packages</p>
+<p><em>Type:</em> list of (string or package)</p>
 </li>
 <li>
-<p><em>Default:</em> <code>{}</code></p>
+<p><em>Default:</em> <code>[ ]</code></p>
 </li>
 </ul>
 </div>
@@ -1083,7 +989,7 @@ to be executed after the plugin loading.</p>
 <div class="option_properties">
 <ul>
 <li>
-<p><em>Type:</em> null or strings concatenated with &quot;\n&quot;</p>
+<p><em>Type:</em> null or strings concatenated with "\n"</p>
 </li>
 <li>
 <p><em>Default:</em> <code>null</code></p>
@@ -1102,10 +1008,10 @@ additional, non-Envy plugin manager.</p>
 <div class="option_properties">
 <ul>
 <li>
-<p><em>Type:</em> string or list of strings</p>
+<p><em>Type:</em> string or list of string</p>
 </li>
 <li>
-<p><em>Default:</em> <code>{}</code></p>
+<p><em>Default:</em> <code>[ ]</code></p>
 </li>
 </ul>
 </div>
@@ -1122,7 +1028,7 @@ nixpkgs) and returns a list of Lua packages that this plugin depends on.</p>
 <p><em>Type:</em> lua packages in `lua.withPackages` format</p>
 </li>
 <li>
-<p><em>Default:</em> <code>packageSet: []</code></p>
+<p><em>Default:</em> <code>"packageSet: []"</code></p>
 </li>
 <li>
 <p><em>Example:</em></p>
@@ -1160,10 +1066,10 @@ additional, non-Envy plugin manager.</p>
 <div class="option_properties">
 <ul>
 <li>
-<p><em>Type:</em> string or list of strings</p>
+<p><em>Type:</em> string or list of string</p>
 </li>
 <li>
-<p><em>Default:</em> <code>{}</code></p>
+<p><em>Default:</em> <code>[ ]</code></p>
 </li>
 </ul>
 </div>
@@ -1180,46 +1086,10 @@ additional, non-Envy plugin manager.</p>
 <div class="option_properties">
 <ul>
 <li>
-<p><em>Type:</em> string or list of strings</p>
+<p><em>Type:</em> string or list of string</p>
 </li>
 <li>
-<p><em>Default:</em> <code>{}</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="pluginregistrynameremotepython2"><a class="header" href="#pluginregistrynameremotepython2"><code>pluginRegistry.&lt;name&gt;.remote.python2</code></a></h3>
-<div class="option_description">
-<p>Whether or not this plugin requires the remote plugin host for Python 2.</p>
-<p>Will effectively be set to true if any Python 2 package dependencies are
-specified for this plugin.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li><em>Type:</em> boolean</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="pluginregistrynameremotepython2deps"><a class="header" href="#pluginregistrynameremotepython2deps"><code>pluginRegistry.&lt;name&gt;.remote.python2Deps</code></a></h3>
-<div class="option_description">
-<p>A function that takes an attribute set of Python 2 packages (typically passed
-from nixpkgs) and returns a list of Python 2 packages that this plugin depends
-on.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> python2 packages in `python2.withPackages` format</p>
-</li>
-<li>
-<p><em>Default:</em> <code>packageSet: []</code></p>
-</li>
-<li>
-<p><em>Example:</em></p>
-<pre><code class="language-nix">(packageSet: with packageSet: [ pandas jedi ])
-</code></pre>
+<p><em>Default:</em> <code>[ ]</code></p>
 </li>
 </ul>
 </div>
@@ -1233,7 +1103,12 @@ specified for this plugin.</p>
 </div>
 <div class="option_properties">
 <ul>
-<li><em>Type:</em> boolean</li>
+<li>
+<p><em>Type:</em> boolean</p>
+</li>
+<li>
+<p><em>Default:</em> <code>false</code></p>
+</li>
 </ul>
 </div>
 </div>
@@ -1250,7 +1125,7 @@ on.</p>
 <p><em>Type:</em> python3 packages in `python3.withPackages` format</p>
 </li>
 <li>
-<p><em>Default:</em> <code>packageSet: []</code></p>
+<p><em>Default:</em> <code>"packageSet: []"</code></p>
 </li>
 <li>
 <p><em>Example:</em></p>
@@ -1281,36 +1156,14 @@ on.</p>
 <h3 id="pluginregistrynamesource"><a class="header" href="#pluginregistrynamesource"><code>pluginRegistry.&lt;name&gt;.source</code></a></h3>
 <div class="option_description">
 <p>Source of the vim plugin.</p>
-<p>Leave as <code>null</code> to let the module infer the source as a vim-plug shortname from
-the name of this <code>pluginConfig</code> attribute.</p>
-<p>Otherwise, set to a string representing a vim-plug-compatible git repository
-url, an existing vim plugin derivation, or to a Nix store path to build a vim
-plugin derivation from.</p>
-<p>If left null or set to a string, a pin for the source must be present in
-<code>sourcePins</code> in order to build the neovim configuration.</p>
+<p>Set to an existing vim plugin derivation, or to a Nix store path to build a vim
+plugin derivation from. Otherwise, leave this as <code>null</code> and set the <code>dir</code>
+configuration option for this plugin instead.</p>
 </div>
 <div class="option_properties">
 <ul>
 <li>
-<p><em>Type:</em> null or package or string or path</p>
-</li>
-<li>
-<p><em>Default:</em> <code>null</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="pluginregistrynametag"><a class="header" href="#pluginregistrynametag"><code>pluginRegistry.&lt;name&gt;.tag</code></a></h3>
-<div class="option_description">
-<p>Tag of the git source to fetch and use. The <code>commit</code> option effectively
-overrides this.</p>
-<p>Leave as <code>null</code> to simply use the <code>HEAD</code>.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> null or string</p>
+<p><em>Type:</em> null or path or package or string</p>
 </li>
 <li>
 <p><em>Default:</em> <code>null</code></p>
@@ -1328,94 +1181,11 @@ immediately prior to any <code>pluginRegistry.&lt;pluginName&gt;.extraConfig</co
 <div class="option_properties">
 <ul>
 <li>
-<p><em>Type:</em> null or strings concatenated with &quot;\n&quot;</p>
+<p><em>Type:</em> null or strings concatenated with "\n"</p>
 </li>
 <li>
 <p><em>Default:</em> <code>null</code></p>
 </li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="sourcepins"><a class="header" href="#sourcepins"><code>sourcePins</code></a></h3>
-<div class="option_description">
-<p>Attribute set of source pins for vim plugins. Attribute names should map
-directly to <code>pluginRegistry</code> attribute names.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li>
-<p><em>Type:</em> attribute set of submodules</p>
-</li>
-<li>
-<p><em>Default:</em> <code>{}</code></p>
-</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="sourcepinsnamefetchtype"><a class="header" href="#sourcepinsnamefetchtype"><code>sourcePins.&lt;name&gt;.fetchType</code></a></h3>
-<div class="option_description">
-<p>Type of the fetcher to use.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li><em>Type:</em> one of &quot;git&quot;, &quot;github&quot;</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="sourcepinsnamerev"><a class="header" href="#sourcepinsnamerev"><code>sourcePins.&lt;name&gt;.rev</code></a></h3>
-<div class="option_description">
-<p><code>pkgs.fetchgit-compatible</code> git revision string.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li><em>Type:</em> string</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="sourcepinsnamesha256"><a class="header" href="#sourcepinsnamesha256"><code>sourcePins.&lt;name&gt;.sha256</code></a></h3>
-<div class="option_description">
-<p><code>pkgs.fetchgit-compatible</code> sha256 string.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li><em>Type:</em> string</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="sourcepinsnameurl"><a class="header" href="#sourcepinsnameurl"><code>sourcePins.&lt;name&gt;.url</code></a></h3>
-<div class="option_description">
-<p><code>pkgs.fetchgit-compatible</code> git url string.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li><em>Type:</em> string</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="sourcepinsnameversion"><a class="header" href="#sourcepinsnameversion"><code>sourcePins.&lt;name&gt;.version</code></a></h3>
-<div class="option_description">
-<p>Version string appropriate for a nixpkgs derivation.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li><em>Type:</em> string</li>
-</ul>
-</div>
-</div>
-<div class="option">
-<h3 id="withpython2"><a class="header" href="#withpython2"><code>withPython2</code></a></h3>
-<div class="option_description">
-<p>Enable Python 2 provider. Set to <code>true</code> to use Python 2 plugins.</p>
-</div>
-<div class="option_properties">
-<ul>
-<li><em>Type:</em> boolean</li>
 </ul>
 </div>
 </div>
@@ -1426,21 +1196,21 @@ directly to <code>pluginRegistry</code> attribute names.</p>
 </div>
 <div class="option_properties">
 <ul>
-<li><em>Type:</em> boolean</li>
+<li>
+<p><em>Type:</em> boolean</p>
+</li>
+<li>
+<p><em>Default:</em> <code>false</code></p>
+</li>
 </ul>
 </div>
 </div>
-<h1 id="b-tools"><a class="header" href="#b-tools">B. Tools</a></h1>
-<p>TODO: Automatically generate a man-page-like segment for here, from envy-pins,
-using the argparse parser object?</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                        
 
-                        
 
                         <div style="clear: both"></div>
                     </nav>
@@ -1448,49 +1218,35 @@ using the argparse parser object?</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                
 
-                
             </nav>
 
         </div>
 
-        
 
-        
 
-        
 
-        
-        <script type="text/javascript">
+        <script>
             window.playground_copyable = true;
         </script>
-        
 
-        
 
-        
-        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
-        
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
 
-        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
-        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
-        
 
-        
-        
-        <script type="text/javascript">
+        <script>
         window.addEventListener('load', function() {
             window.setTimeout(window.print, 100);
         });
         </script>
-        
-        
 
+    </div>
     </body>
 </html>

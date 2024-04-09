@@ -1,1 +1,0 @@
-(import ./manual.nix { }).shell

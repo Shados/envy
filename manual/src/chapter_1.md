@@ -37,6 +37,18 @@ in
 }
 ```
 
+Or, if you've added envy as a flake input and have flake inputs available in your module arguments:
+```nix
+{ config, lib, inputs, pkgs, ... }:
+{
+  imports = [
+    (envy.nixosModules.default { })
+    ...
+  ];
+  ...
+}
+```
+
 ### home-manager
 Add the `envy/home-manager.nix` module to `imports` in your `configuration.nix`:
 ```nix
@@ -46,22 +58,24 @@ let
 in
 {
   imports = [
-    (import "${envy}/home-manager.nix" { mergeNixosDefinitions = false; })
+    (import "${envy}/home-manager.nix" { })
     ...
   ];
   ...
 }
 ```
 
-`mergeNixosDefinitions` controls whether or not any `sn.programs.neovim`
-settings from the current system's NixOS configuration should be merged into
-the home-manager defintions. This allows for "layering" user-level neovim
-configuration on top of the system-wide config. It is `false` by default.
-
-NOTE: You are likely better off just directly including your NixOS
-envy-configuration module in your hm config, if you want to layer the two, but
-this approach is not always possible/viable.
-
+Or, if you've added envy as a flake input and have flake inputs available in your module arguments:
+```nix
+{ config, lib, inputs, pkgs, ... }:
+{
+  imports = [
+    (envy.homeModules.default { })
+    ...
+  ];
+  ...
+}
+```
 
 ## Standalone Setup
 Usage as a standalone module is slightly more complicated, and is most easily
@@ -72,15 +86,6 @@ let
   envy = (builtins.fetchgit { url = https://github.com/Shados/envy; ref = "master"; });
   envyLib = (import "${envy}/lib.nix" { inherit nixpkgs; });
   envyModule = envyLib.configuredNeovimModule {
-    # Whether or not to merge in Envy config pulled from the current NixOS Envy
-    # module configuration
-    withNixosConfig = false;
-    # Whether or not to merge in Envy config pulled from the current
-    # home-manager-in-NixOS Envy module configuration
-    withNixosHMConfig = false;
-    # Whether or not to merge in Envy config pulled from the current
-    # home-manager Envy module configuration
-    withHMConfig = false;
     nvimConfig = { config, lib, pkgs, ... }: {
       # Envy module config here
       pluginRegistry = {

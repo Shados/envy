@@ -21,7 +21,7 @@ all: $(MANUAL_BUILD_DIR) $(LUA_FILES)
 
 clean:
 	rm -rf $(LUA_FILES) && \
-	cd $(MANUAL_DIR) && \
+	pushd $(MANUAL_DIR) && \
 	mdbook clean
 
 $(MANUAL_BUILD_DIR): $(MANUAL_SRC_FILES)

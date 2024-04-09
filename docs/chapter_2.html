@@ -1,40 +1,27 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js light">
+<html lang="en" class="light" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
         <title>Module Configuration - Envy Documentation</title>
-        
-        
 
 
         <!-- Custom HTML head -->
         
-
-
-        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#ffffff">
 
-        
         <link rel="icon" href="favicon.svg">
-        
-        
         <link rel="shortcut icon" href="favicon.png">
-        
         <link rel="stylesheet" href="css/variables.css">
         <link rel="stylesheet" href="css/general.css">
         <link rel="stylesheet" href="css/chrome.css">
-        
         <link rel="stylesheet" href="css/print.css" media="print">
-        
 
         <!-- Fonts -->
         <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        
         <link rel="stylesheet" href="fonts/fonts.css">
-        
 
         <!-- Highlight.js Stylesheets -->
         <link rel="stylesheet" href="highlight.css">
@@ -42,19 +29,18 @@
         <link rel="stylesheet" href="ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
-        
 
-        
     </head>
-    <body>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
         <!-- Provide site root to javascript -->
-        <script type="text/javascript">
+        <script>
             var path_to_root = "";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
-        <script type="text/javascript">
+        <script>
             try {
                 var theme = localStorage.getItem('mdbook-theme');
                 var sidebar = localStorage.getItem('mdbook-sidebar');
@@ -70,79 +56,104 @@
         </script>
 
         <!-- Set the theme before any content is loaded, prevents flash -->
-        <script type="text/javascript">
+        <script>
             var theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             var html = document.querySelector('html');
-            html.classList.remove('no-js')
             html.classList.remove('light')
             html.classList.add(theme);
-            html.classList.add('js');
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
         </script>
 
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
         <!-- Hide / unhide sidebar before it is displayed -->
-        <script type="text/javascript">
-            var html = document.querySelector('html');
-            var sidebar = 'hidden';
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
             }
-            html.classList.remove('sidebar-visible');
-            html.classList.add("sidebar-" + sidebar);
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="chapter_2.html" class="active"><strong aria-hidden="true">2.</strong> Module Configuration</a></li><li class="chapter-item expanded "><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Packaging Plugins</a></li><li class="chapter-item expanded "><a href="chapter_4.html"><strong aria-hidden="true">4.</strong> Advanced Usage</a></li><li class="spacer"></li><li class="chapter-item expanded affix "><a href="options.html">A. Configuration Options</a></li><li class="chapter-item expanded affix "><a href="tools.html">B. Tools</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> Setup</a></li><li class="chapter-item expanded "><a href="chapter_2.html" class="active"><strong aria-hidden="true">2.</strong> Module Configuration</a></li><li class="chapter-item expanded "><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Advanced Usage</a></li><li class="spacer"></li><li class="chapter-item expanded affix "><a href="options.html">A. Configuration Options</a></li></ol>
             </div>
-            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
         </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
 
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
-                
-                <div id="menu-bar-hover-placeholder"></div>
-                <div id="menu-bar" class="menu-bar sticky bordered">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
-                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
                             <i class="fa fa-bars"></i>
-                        </button>
+                        </label>
                         <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
                         </ul>
-                        
                         <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
                         </button>
-                        
                     </div>
 
                     <h1 class="menu-title">Envy Documentation</h1>
 
                     <div class="right-buttons">
-                        
                         <a href="print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
-                        
-                        
+
                     </div>
                 </div>
 
-                
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -150,10 +161,9 @@
                         </ul>
                     </div>
                 </div>
-                
 
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
-                <script type="text/javascript">
+                <script>
                     document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
                     document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
                     Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
@@ -173,11 +183,10 @@ examples of how the options may be used.</p>
 <li>Enable the plugins you want to use.</li>
 <li>Specify any additional dependencies the plugins may have.</li>
 <li>Add per-plugin configuration.</li>
-<li>Pre-fetch and pin any shortname plugins (see chapter 3).</li>
 </ol>
 <h2 id="non-plugin-configuration"><a class="header" href="#non-plugin-configuration">Non-plugin Configuration</a></h2>
 <p>Adapt your non-plugin <code>init.vim</code> configuration to use Envy's module options.</p>
-<p>By &quot;non-plugin&quot; here we mean specifically things that either don't depend
+<p>By "non-plugin" here we mean specifically things that either don't depend
 on/configure <em>any</em> plugin, <em>or</em> that could depend on any one of several plugins
 (in which case, you should use Nix functionality to check which/whether any of
 those plugins are enabled and adapt the generated configuration appropriately).</p>
@@ -186,7 +195,7 @@ those plugins are enabled and adapt the generated configuration appropriately).<
 {
   # Configuration items that should be done prior to any per-plugin configuration
   prePluginConfig = ''
-    let mapleader = &quot;\&lt;Space&gt;&quot;
+    let mapleader = "\&lt;Space&gt;"
     augroup vimrc
       autocmd!
     augroup END
@@ -208,7 +217,7 @@ those plugins are enabled and adapt the generated configuration appropriately).<
     set tabstop=2
     set expandtab
 
-    &quot; Use Ripgrep (rg) for search backend
+    " Use Ripgrep (rg) for search backend
     let g:ackprg = '${pkgs.ripgrep}/bin/rg --vimgrep --smart-case --no-heading --max-filesize=4M'
     set grepprg:${pkgs.ripgrep}/bin/rg\ --vimgrep\ --smart-case\ --no-heading\ --max-filesize=4M
 
@@ -227,63 +236,45 @@ those plugins are enabled and adapt the generated configuration appropriately).<
   # would typically consist of any extra/local contents of .config/nvim/ in a
   # non-Nix neovim setup.
   files = {
-    neosnippets.source = &quot;/my/snippet/files/&quot;;
+    neosnippets.source = "/my/snippet/files/";
   };
 }
 </code></pre>
 <h2 id="enabling-plugins"><a class="header" href="#enabling-plugins">Enabling Plugins</a></h2>
-<p>You can enable both pre-existing Nix vim plugin derivations (e.g. from
-nixpkgs), and vim plugins on github, both by using
-<code>pluginRegistry.&lt;pluginName&gt;.enable</code>.</p>
 <p>There are several ways to specify the source for a plugin, depending on what
 you want:</p>
 <pre><code class="language-nix">{ config, lib, pkgs, ... }:
 {
   pluginRegistry = {
-    # In this case, the name 'ale' is automatically 'resolved' against
-    # pkgs.vimPlugins to select the plugin source
-    ale.enable = true;
-    # In this case, `source` is explicitly pointed to an existing Vim plugin
-    # derivation.
-    &quot;denite.nvim&quot; = {
+    # In this case, `source` is pointed to an existing Vim plugin derivation.
+    "denite.nvim" = {
       enable = true;
       source = pkgs.vimPlugins.denite-nvim;
     };
-    # In this case, the name fails to resolve against pkgs.vimPlugins, so
-    # `source` is automatically inferred from the `name`, on the assumption
-    # that it is a vim-plug-compatible 'shortname', which will be used to
-    # dynamically construct a derivation from a Vim plugin sourced from
-    # https://github.com/Shados/vim-session (see chapter 3).
-    &quot;Shados/vim-session&quot;.enable = true;
-    vim-buffet = {
-      enable = true;
-      # In this case, we again are using a shortname for the source, but we set
-      # it explicitly.
-      source = &quot;bagrat/vim-buffet&quot;;
-      # Additionally, we specify the exact commit we want to pin and use for the git source.
-      # Generally you are better off relying on the separate JSON pin files to
-      # pin to a specific commit, but in this case the version after this
-      # commit has breaking changes, which would mean the configuration of the
-      # plugin would also have to change, meaning that the commit information
-      # is more an element of configuration than of state. 'branch' and 'tag'
-      # are also supported for specifying what to fetch.
-      commit = &quot;044f2954a5e49aea8625973de68dda8750f1c42d&quot;;
-    };
+
+    # In this case, Envy will dynamically construct a derivation using the
+    # given Nix store path as the source.
     localPlugin = {
       enable = true;
-      # In this case, Envy will dynamically construct a derivation using the
-      # given Nix store path as the source.
       source = /some/local/path/or/store/path;
     };
+
+    # Here we instead instruct Envy to have Vim load the plugin from a local
+    # filesystem path at run-time, rather than bundling it into the Nix store.
+    # This is useful for doing plugin development, or if you otherwise want to
+    # use a plugin outside of the Nix store, while still allowing you to
+    # leverage Envy's configuration and dependency specification/resolution
+    # mechanisms.
     inDevPlugin = {
       enable = true;
-      # Here we instead instruct Envy to have Vim load the plugin from a local
-      # filesystem path at run-time, rather than bundling it into the Nix
-      # store. This is useful for doing plugin development, or if you otherwise
-      # want to use a plugin outside of the Nix store, while still allowing you
-      # to leverage Envy's configuration and dependency
-      # specification/resolution mechanisms.
-      dir = &quot;/a/local/path/string&quot;;
+      dir = "/a/local/path/string";
+    };
+
+    # Envy also provides a helper for constructing a vim plugin derivation from
+    # a Niv sources.nix attrset, which you can then use as a source.
+    vim-systemd-syntax = {
+      enable = true;
+      source = config.sn.programs.neovim.lib.buildVimPluginFromNiv (import ./pins { }) "vim-systemd-syntax";
     };
   };
 }
@@ -293,10 +284,9 @@ you want:</p>
 <pre><code class="language-nix">{ config, lib, pkgs, ... }:
 {
   pluginRegistry = {
-    # Inter-plugin dependencies; the items should preferably be the names of
-    # `pluginRegistry` or `vim.vimPlugins` items, but can alternatively be Vim
-    # plugin derivations.
-    neosnippet-snippets.dependencies = [ &quot;neosnippet-vim&quot; ];
+    # Inter-plugin dependencies; the items should either be `pluginRegistry`
+    # attribute names or vim plugin derivations.
+    neosnippet-snippets.dependencies = [ "neosnippet-vim" ];
     # Specifies that a plugin needs external executables from the given
     # packages made available in neovim's $PATH.
     ale.binDeps = with pkgs; [
@@ -307,15 +297,15 @@ you want:</p>
     # Ensures that the specified Lua modules will be made available in
     # neovim's LUA_PATH/LUA_CPATH, meaning that the main neovim process can
     # load them for in-process Lua plugins and scripts to use.
-    &quot;Shados/precog.nvim&quot;.luaDeps = ps: with ps; [
+    "Shados/precog.nvim".luaDeps = ps: with ps; [
       luafilesystem
     ];
     # Flags a plugin as being a 'remote' plugin requiring a plugin host for a
     # specific language (here, Python 3).
     denite-nvim.remote.python3 = true;
     # Pulls in plugin-host-language dependencies.
-    # Automatically implies `remote.python2 = true;`.
-    aPythonPlugin.remote.python2Deps = ps: with ps; [
+    # Automatically implies `remote.python3 = true;`.
+    aPythonPlugin.remote.python3Deps = ps: with ps; [
       requests
     ];
   };
@@ -323,18 +313,20 @@ you want:</p>
 </code></pre>
 <p>Inter-plugin dependencies also determine the order in which Vim plugins are
 loaded at Vim run-time (by <a href="https://github.com/junegunn/vim-plug">vim-plug</a>).</p>
-<p>There are additionally two &quot;soft&quot; dependency options (<code>before</code> and <code>after</code>,
+<p>There are additionally two "soft" dependency options (<code>before</code> and <code>after</code>,
 both of which take lists of plugin names only), that change how plugins are
-ordered if both are enabled, but does not cause the &quot;dependency&quot; to be enabled
-if the &quot;dependent&quot; plugin is, e.g.:</p>
+ordered if both are enabled, but does not cause the "dependency" to be enabled
+if the "dependent" plugin is, e.g.:</p>
 <pre><code class="language-nix">{ config, lib, pkgs, ... }:
 {
   pluginRegistry = {
     # vim-devicons needs to be loaded after these plugins, if they
-    # are being used, as per its installation guide
+    # are being used, as per its installation guide.
+    # Both `after` and `before` can be specified as either `pluginRegistry`
+    # attribute names or vim plugin derivations.
     vim-devicons.after = [
-      &quot;nerdtree&quot; &quot;vim-airline&quot; &quot;ctrlp-vim&quot; &quot;powerline/powerline&quot; &quot;denite-nvim&quot;
-      &quot;unite-vim&quot; &quot;lightline-vim&quot; &quot;vim-startify&quot; &quot;vimfiler&quot; &quot;vim-flagship&quot;
+      "nerdtree" "vim-airline" "ctrlp-vim" "powerline/powerline" "denite-nvim"
+      "unite-vim" "lightline-vim" "vim-startify" "vimfiler" "vim-flagship"
     ];
   };
 }
@@ -354,17 +346,13 @@ dependencies and explicit ordering information).</p>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                        
                             <a rel="prev" href="chapter_1.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
-                        
 
-                        
-                            <a rel="next" href="chapter_3.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="chapter_3.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
-                        
 
                         <div style="clear: both"></div>
                     </nav>
@@ -372,49 +360,36 @@ dependencies and explicit ordering information).</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                
                     <a rel="prev" href="chapter_1.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
-                
 
-                
-                    <a rel="next" href="chapter_3.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="chapter_3.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
-                
             </nav>
 
         </div>
 
-        
 
-        
 
-        
 
-        
-        <script type="text/javascript">
+        <script>
             window.playground_copyable = true;
         </script>
-        
 
-        
 
-        
-        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
-        
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
 
-        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
-        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
-        
 
-        
 
+    </div>
     </body>
 </html>

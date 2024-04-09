@@ -2,20 +2,63 @@
 
 <div class="option">
 
-### `baseVimPlugins`
+### `_module.args`
 
 <div class="option_description">
 
-Base set of vim plugin derivations to resolve string/name-based plugin
-dependencies against.
+Additional arguments passed to each module in addition to ones like `lib`,
+`config`, and `pkgs`, `modulesPath`.
+
+This option is also available to all submodules. Submodules do not inherit args
+from their parent module, nor do they provide args to their parent module or
+sibling submodules. The sole exception to this is the argument `name` which is
+provided by parent modules to a submodule and contains the attribute name the
+submodule is bound to, or a unique generated name if it is not bound to an
+attribute.
+
+Some arguments are already passed by default, of which the following *cannot* be
+changed with this option:
+
+  - {var}`lib`: The nixpkgs library.
+
+  - {var}`config`: The results of all options after merging the values from all
+    modules together.
+
+  - {var}`options`: The options declared in all modules.
+
+  - {var}`specialArgs`: The `specialArgs` argument passed to `evalModules`.
+
+  - All attributes of {var}`specialArgs`
+    
+    Whereas option values can generally depend on other option values thanks to
+    laziness, this does not apply to `imports`, which must be computed
+    statically before anything else.
+    
+    For this reason, callers of the module system can provide `specialArgs`
+    which are available during import resolution.
+    
+    For NixOS, `specialArgs` includes {var}`modulesPath`, which allows you to
+    import extra modules from the nixpkgs package tree without having to somehow
+    make the module aware of the location of the `nixpkgs` or NixOS directories.
+    
+    ``` 
+    { modulesPath, ... }: {
+      imports = [
+        (modulesPath + "/profiles/minimal.nix")
+      ];
+    }
+    ```
+
+For NixOS, the default value for this option includes at least this argument:
+
+  - {var}`pkgs`: The nixpkgs package set according to the {option}`nixpkgs.pkgs`
+    option.
 
 </div>
 
 <div class="option_properties">
 
-  - *Type:* attribute set
-
-  - *Default:* `base vimPlugins without aliases`
+  - *Type:* lazy attribute set of raw value
 
 </div>
 
@@ -37,7 +80,7 @@ The language you wish to use for user-supplied configuration line options
 
   - *Type:* one of "vimscript", "lua", "moonscript"
 
-  - *Default:* `vimscript`
+  - *Default:* `"vimscript"`
 
 </div>
 
@@ -63,9 +106,9 @@ necessary if you need to make executables available for either:
 
 <div class="option_properties">
 
-  - *Type:* list of packages
+  - *Type:* list of package
 
-  - *Default:* `{}`
+  - *Default:* `[ ]`
 
 </div>
 
@@ -95,37 +138,6 @@ lines.
 
 <div class="option">
 
-### `extraPython2Packages`
-
-<div class="option_description">
-
-A function in `python.withPackages` format, which returns a list of Python 2
-packages required for your plugins to work.
-
-Using the per-plugin `python2Deps` is strongly preferred; this should only be
-necessary if you need some Python 2 packages made available to neovim for a
-plugin that is *not* being managed by this module.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* python2 packages in \`python2.withPackages\` format
-
-  - *Default:* `ps: []`
-
-  - *Example:*
-    
-    ``` nix
-    (ps: with ps; [ pandas jedi ])
-    ```
-
-</div>
-
-</div>
-
-<div class="option">
-
 ### `extraPython3Packages`
 
 <div class="option_description">
@@ -143,7 +155,7 @@ plugin that is *not* being managed by this module.
 
   - *Type:* python3 packages in \`python3.withPackages\` format
 
-  - *Default:* `ps: []`
+  - *Default:* `"ps: []"`
 
   - *Example:*
     
@@ -168,9 +180,9 @@ these would typically be locally-managed files in the `~/.config/nvim` folder.
 
 <div class="option_properties">
 
-  - *Type:* attribute set of submodules
+  - *Type:* attribute set of (submodule)
 
-  - *Default:* `{}`
+  - *Default:* `{ }`
 
   - *Example:*
     
@@ -298,6 +310,8 @@ the number of directories added to vim's `runtimepath`, decreasing startup time.
 
   - *Type:* boolean
 
+  - *Default:* `false`
+
 </div>
 
 </div>
@@ -316,7 +330,7 @@ The base neovim package to wrap.
 
   - *Type:* package
 
-  - *Default:* `pkgs.neovim-unwrapped`
+  - *Default:* `"pkgs.neovim-unwrapped"`
 
 </div>
 
@@ -334,48 +348,21 @@ An attribute set describing the available/known neovim plugins.
 
 <div class="option_properties">
 
-  - *Type:* attribute set of submodules
+  - *Type:* attribute set of (submodule)
 
-  - *Default:* `{}`
+  - *Default:* `{ }`
 
   - *Example:*
     
     ``` nix
-    {
-      # A "source" plugin, where the source is inferred from the attribute
-      # name, treated as a vim-plug-compatible shortname
-      "bagrat/vim-buffet" = {
+    (let
+      inherit (pkgs) vimPlugins;
+      pins = import ./niv/sources.nix { };
+    in {
+      nvim-moonmaker = {
         enable = true;
-        dependencies = [
-          "lightline-vim"
-        ];
-        # The specific commit to use for the source checkout
-        commit = "044f2954a5e49aea8625973de68dda8750f1c42d";
-        extraConfig = ''
-          " Customize vim-workspace colours based on gruvbox colours
-          function g:WorkspaceSetCustomColors()
-            highlight WorkspaceBufferCurrentDefault guibg=#a89984 guifg=#282828
-            highlight WorkspaceBufferActiveDefault guibg=#504945 guifg=#a89984
-            highlight WorkspaceBufferHiddenDefault guibg=#3c3836 guifg=#a89984
-            highlight WorkspaceBufferTruncDefault guibg=#3c3836 guifg=#b16286
-            highlight WorkspaceTabCurrentDefault guibg=#689d6a guifg=#282828
-            highlight WorkspaceTabHiddenDefault guibg=#458588 guifg=#282828
-            highlight WorkspaceFillDefault guibg=#3c3836 guifg=#3c3836
-            highlight WorkspaceIconDefault guibg=#3c3836 guifg=#3c3836
-          endfunction
-          " vim-workspace
-          " Disable lightline's tabline functionality, as it conflicts with this
-          let g:lightline.enable = { 'tabline': 0 }
-          " Prettify
-          let g:workspace_powerline_separators = 1
-          let g:workspace_tab_icon = "\uf00a"
-          let g:workspace_left_trunc_icon = "\uf0a8"
-          let g:workspace_right_trunc_icon = "\uf0a9"
-        '';
-      };
-    
-      "Shados/nvim-moonmaker" = {
-        enable = false;
+        # Build plugin derivation from a Niv source pins attribute set
+        source = config.sn.programs.neovim.lib.buildVimPluginFromNiv pins "nvim-moonmaker";
         # Decide whether or not to load at run-time based on the result of
         # a VimL expression
         condition = "executable('moonc')";
@@ -383,12 +370,14 @@ An attribute set describing the available/known neovim plugins.
     
       vim-auto-save = {
         enable = true;
+        source = vimPlugins.vim-auto-save;
         # Lazily load on opening a tex file
         for = "tex";
       };
     
       nerdtree = {
         enable = true;
+        source = vimPlugins.nerdtree;
         # Lazily load on command usage
         on_cmd = "NERDTreeToggle";
         extraConfig = ''
@@ -397,9 +386,6 @@ An attribute set describing the available/known neovim plugins.
           let NERDTreeDirArrows = 1
         '';
       };
-    
-      # Use upstream LanguageClient-neovim derivation
-      LanguageClient-neovim.enable = true;
     
       # A "path" plugin built from a source path
       "nginx.vim" = {
@@ -416,6 +402,7 @@ An attribute set describing the available/known neovim plugins.
     
       # A plugin configured but not enabled
       vim-devicons = {
+        source = vimPlugins.vim-devicons;
         # vim-devicons needs to be loaded after these plugins, if they
         # are being used, as per its installation guide
         after = [
@@ -424,7 +411,7 @@ An attribute set describing the available/known neovim plugins.
           "vimfiler" "vim-flagship"
         ];
       };
-    }
+    })
     ```
 
 </div>
@@ -445,6 +432,8 @@ Whether or not this neovim plugin should be installed and used.
 
   - *Type:* boolean
 
+  - *Default:* `false`
+
 </div>
 
 </div>
@@ -460,16 +449,16 @@ List of other vim plugins that this plugin should be loaded *after*.
 This can be seen as a "soft" form of making each of the listed plugins
 dependencies of this plugin.
 
-Items must be strings representings either vim-plug-compatible git repository
-urls, or base `vimPlugins` attribute names.
+Items can either be existing vim plugin derivations, or strings corresponding to
+`pluginRegistry` attributes.
 
 </div>
 
 <div class="option_properties">
 
-  - *Type:* list of strings
+  - *Type:* list of string
 
-  - *Default:* `{}`
+  - *Default:* `[ ]`
 
 </div>
 
@@ -486,16 +475,16 @@ List of other vim plugins that this plugin should be loaded *before*.
 This can be seen as a "soft" form of making this plugin a dependency of each of
 the listed plugins.
 
-Items must be strings representings either vim-plug-compatible git repository
-urls, or base `vimPlugins` attribute names.
+Items can either be existing vim plugin derivations, or strings corresponding to
+`pluginRegistry` attributes.
 
 </div>
 
 <div class="option_properties">
 
-  - *Type:* list of strings
+  - *Type:* list of string
 
-  - *Default:* `{}`
+  - *Default:* `[ ]`
 
 </div>
 
@@ -514,54 +503,9 @@ A list of derivations containing executables that need to be available in the
 
 <div class="option_properties">
 
-  - *Type:* list of packages
+  - *Type:* list of package
 
-  - *Default:* `{}`
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `pluginRegistry.<name>.branch`
-
-<div class="option_description">
-
-Branch of the git source to fetch and use. The `tag` and `commit` options
-effectively override this.
-
-Leave as `null` to simply use the branch of `HEAD` (typically, `master`).
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* null or string
-
-  - *Default:* `null`
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `pluginRegistry.<name>.commit`
-
-<div class="option_description">
-
-Commit of the git source to fetch and use.
-
-Leave as `null` to simply use the `HEAD`.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* null or string
-
-  - *Default:* `null`
+  - *Default:* `[ ]`
 
 </div>
 
@@ -600,16 +544,16 @@ plugin.
 
 List of other vim plugins that are dependencies of this plugin.
 
-Items can be either strings representings vim-plug-compatible git repository
-urls, base `vimPlugins` attribute names, or existing vim plugin derivations.
+Items can either be existing vim plugin derivations, or strings corresponding to
+`pluginRegistry` attributes.
 
 </div>
 
 <div class="option_properties">
 
-  - *Type:* list of string or packages
+  - *Type:* list of (string or package)
 
-  - *Default:* `{}`
+  - *Default:* `[ ]`
 
 </div>
 
@@ -686,9 +630,9 @@ additional, non-Envy plugin manager.
 
 <div class="option_properties">
 
-  - *Type:* string or list of strings
+  - *Type:* string or list of string
 
-  - *Default:* `{}`
+  - *Default:* `[ ]`
 
 </div>
 
@@ -709,7 +653,7 @@ nixpkgs) and returns a list of Lua packages that this plugin depends on.
 
   - *Type:* lua packages in \`lua.withPackages\` format
 
-  - *Default:* `packageSet: []`
+  - *Default:* `"packageSet: []"`
 
   - *Example:*
     
@@ -759,9 +703,9 @@ additional, non-Envy plugin manager.
 
 <div class="option_properties">
 
-  - *Type:* string or list of strings
+  - *Type:* string or list of string
 
-  - *Default:* `{}`
+  - *Default:* `[ ]`
 
 </div>
 
@@ -785,58 +729,9 @@ additional, non-Envy plugin manager.
 
 <div class="option_properties">
 
-  - *Type:* string or list of strings
+  - *Type:* string or list of string
 
-  - *Default:* `{}`
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `pluginRegistry.<name>.remote.python2`
-
-<div class="option_description">
-
-Whether or not this plugin requires the remote plugin host for Python 2.
-
-Will effectively be set to true if any Python 2 package dependencies are
-specified for this plugin.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* boolean
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `pluginRegistry.<name>.remote.python2Deps`
-
-<div class="option_description">
-
-A function that takes an attribute set of Python 2 packages (typically passed
-from nixpkgs) and returns a list of Python 2 packages that this plugin depends
-on.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* python2 packages in \`python2.withPackages\` format
-
-  - *Default:* `packageSet: []`
-
-  - *Example:*
-    
-    ``` nix
-    (packageSet: with packageSet: [ pandas jedi ])
-    ```
+  - *Default:* `[ ]`
 
 </div>
 
@@ -859,6 +754,8 @@ specified for this plugin.
 
   - *Type:* boolean
 
+  - *Default:* `false`
+
 </div>
 
 </div>
@@ -879,7 +776,7 @@ on.
 
   - *Type:* python3 packages in \`python3.withPackages\` format
 
-  - *Default:* `packageSet: []`
+  - *Default:* `"packageSet: []"`
 
   - *Example:*
     
@@ -921,44 +818,15 @@ Leave as `null` to simply use the root of the source.
 
 Source of the vim plugin.
 
-Leave as `null` to let the module infer the source as a vim-plug shortname from
-the name of this `pluginConfig` attribute.
-
-Otherwise, set to a string representing a vim-plug-compatible git repository
-url, an existing vim plugin derivation, or to a Nix store path to build a vim
-plugin derivation from.
-
-If left null or set to a string, a pin for the source must be present in
-`sourcePins` in order to build the neovim configuration.
+Set to an existing vim plugin derivation, or to a Nix store path to build a vim
+plugin derivation from. Otherwise, leave this as `null` and set the `dir`
+configuration option for this plugin instead.
 
 </div>
 
 <div class="option_properties">
 
-  - *Type:* null or package or string or path
-
-  - *Default:* `null`
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `pluginRegistry.<name>.tag`
-
-<div class="option_description">
-
-Tag of the git source to fetch and use. The `commit` option effectively
-overrides this.
-
-Leave as `null` to simply use the `HEAD`.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* null or string
+  - *Type:* null or path or package or string
 
   - *Default:* `null`
 
@@ -991,135 +859,6 @@ Leave null if no such extra configuration is required.
 
 <div class="option">
 
-### `sourcePins`
-
-<div class="option_description">
-
-Attribute set of source pins for vim plugins. Attribute names should map
-directly to `pluginRegistry` attribute names.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* attribute set of submodules
-
-  - *Default:* `{}`
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `sourcePins.<name>.fetchType`
-
-<div class="option_description">
-
-Type of the fetcher to use.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* one of "git", "github"
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `sourcePins.<name>.rev`
-
-<div class="option_description">
-
-`pkgs.fetchgit-compatible` git revision string.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* string
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `sourcePins.<name>.sha256`
-
-<div class="option_description">
-
-`pkgs.fetchgit-compatible` sha256 string.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* string
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `sourcePins.<name>.url`
-
-<div class="option_description">
-
-`pkgs.fetchgit-compatible` git url string.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* string
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `sourcePins.<name>.version`
-
-<div class="option_description">
-
-Version string appropriate for a nixpkgs derivation.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* string
-
-</div>
-
-</div>
-
-<div class="option">
-
-### `withPython2`
-
-<div class="option_description">
-
-Enable Python 2 provider. Set to `true` to use Python 2 plugins.
-
-</div>
-
-<div class="option_properties">
-
-  - *Type:* boolean
-
-</div>
-
-</div>
-
-<div class="option">
-
 ### `withPython3`
 
 <div class="option_description">
@@ -1131,6 +870,8 @@ Enable Python 3 provider. Set to `true` to use Python 3 plugins.
 <div class="option_properties">
 
   - *Type:* boolean
+
+  - *Default:* `false`
 
 </div>
 
