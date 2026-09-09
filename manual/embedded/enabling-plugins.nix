@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   pluginRegistry = {
     # In this case, `source` is pointed to an existing Vim plugin derivation.
@@ -29,7 +34,9 @@
     # a Niv sources.nix attrset, which you can then use as a source.
     vim-systemd-syntax = {
       enable = true;
-      source = config.sn.programs.neovim.lib.buildVimPluginFromNiv (import ./pins { }) "vim-systemd-syntax";
+      source = config.sn.programs.neovim.lib.buildVimPluginFromNiv (import ./pins
+        { }
+      ) "vim-systemd-syntax";
     };
   };
 }

@@ -1,4 +1,6 @@
-{ nixpkgs ? import <nixpkgs> { } }:
+{
+  nixpkgs ? import <nixpkgs> { },
+}:
 (import ./lib.nix { inherit nixpkgs; }).configuredNeovimModule {
-  nvimConfig = {...}: {};
+  nvimConfig = { ... }: { };
 }

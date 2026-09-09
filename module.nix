@@ -2,222 +2,332 @@
 # only get {config, lib, options} as arguments, so we have to wrap in another
 # function to get pkgs
 pkgs:
-{ config, lib, options, ... }:
+{
+  config,
+  lib,
+  options,
+  ...
+}:
 let
-  inherit (lib) all any attrNames attrValues concatLists concatMap concatMapStringsSep concatStrings concatStringsSep elem escape filter filterAttrs filterAttrsRecursive flatten flip foldl' foldr getValues hasAttr hasPrefix isDerivation isFunction isList isString length literalExpression mapAttrs mapAttrsToList mkDefault mkIf mkOption mkOptionType nameValuePair optionals optionalAttrs optionalString recursiveUpdate replaceStrings singleton splitString types unique;
+  inherit (lib)
+    all
+    any
+    attrNames
+    attrValues
+    concatLists
+    concatMap
+    concatMapStringsSep
+    concatStrings
+    concatStringsSep
+    elem
+    escape
+    filter
+    filterAttrs
+    filterAttrsRecursive
+    flatten
+    flip
+    foldl'
+    foldr
+    getValues
+    hasAttr
+    hasPrefix
+    isDerivation
+    isFunction
+    isList
+    isString
+    length
+    literalExpression
+    mapAttrs
+    mapAttrsToList
+    mkDefault
+    mkIf
+    mkOption
+    mkOptionType
+    nameValuePair
+    optionals
+    optionalAttrs
+    optionalString
+    recursiveUpdate
+    replaceStrings
+    singleton
+    splitString
+    types
+    unique
+    ;
   inherit (builtins) unsafeDiscardStringContext;
   nvimLib = import ./lib.nix { nixpkgs = pkgs; };
 
+  mkInitScript =
+    isPluginOnly: plugList:
+    ''
+      -- Envy Lua runtime
+      ${luaSetup}
+    ''
+    + optionalString (config.files != { } && !isPluginOnly) ''
+      -- Locally-specified file tree, not a plugin per se
+      ${addBeforeRtp (toString localNvimFiles)}
+      ${optionalString (hasAfterDir localNvimFiles) (addAfterRtp (toString localNvimFiles))}
+    ''
+    + ''
+      -- User-specified plugin loading
+      ${luaLoadPlugins plugList (!isPluginOnly)}
+      vim.api.nvim_command("filetype indent plugin on")
+      vim.api.nvim_command("syntax on")
 
-  mkInitScript = isPluginOnly: plugList: ''
-    -- Envy Lua runtime
-    ${luaSetup}
-  '' + optionalString (config.files != {} && !isPluginOnly) ''
-    -- Locally-specified file tree, not a plugin per se
-    ${addBeforeRtp (toString localNvimFiles)}
-    ${optionalString (hasAfterDir localNvimFiles) (addAfterRtp (toString localNvimFiles))}
-  '' + ''
-    -- User-specified plugin loading
-    ${luaLoadPlugins plugList (!isPluginOnly)}
-    vim.api.nvim_command("filetype indent plugin on")
-    vim.api.nvim_command("syntax on")
-
-    -- User-provided config
-  '' + optionalString (!isPluginOnly) ''
-    ${vimUserConfig}
-  '';
-
-  vimUserConfig = let
-    vimText = ''
-      " Envy: prePluginConfig
-      ${optionalString (config.prePluginConfig != null) config.prePluginConfig}
-      " Envy: per-plugin extraConfig
-      ${perPluginExtraConfig}
-      " Envy: extraConfig
-      ${config.extraConfig}
+      -- User-provided config
+    ''
+    + optionalString (!isPluginOnly) ''
+      ${vimUserConfig}
     '';
-    luaText = ''
-      -- Envy: prePluginConfig
-      ${optionalString (config.prePluginConfig != null) config.prePluginConfig}
-      -- Envy: per-plugin extraConfig
-      ${perPluginExtraConfig}
-      -- Envy: extraConfig
-      ${config.extraConfig}
-    '';
-    langSwitch = {
-      vimscript = ''vim.api.nvim_command("source ${pkgs.writeText "user-config.vim" vimText}")'';
-      lua = luaText;
-      moonscript = compileMoon (luaText +
-        # Suppress a MoonScript-generated return value (it does this due to being an expression-oriented language)
-        ''
-          return
-        '');
-    };
-  in langSwitch.${config.configLanguage};
+
+  vimUserConfig =
+    let
+      vimText = ''
+        " Envy: prePluginConfig
+        ${optionalString (config.prePluginConfig != null) config.prePluginConfig}
+        " Envy: per-plugin extraConfig
+        ${perPluginExtraConfig}
+        " Envy: extraConfig
+        ${config.extraConfig}
+      '';
+      luaText = ''
+        -- Envy: prePluginConfig
+        ${optionalString (config.prePluginConfig != null) config.prePluginConfig}
+        -- Envy: per-plugin extraConfig
+        ${perPluginExtraConfig}
+        -- Envy: extraConfig
+        ${config.extraConfig}
+      '';
+      langSwitch = {
+        vimscript = ''vim.api.nvim_command("source ${pkgs.writeText "user-config.vim" vimText}")'';
+        lua = luaText;
+        moonscript = compileMoon (
+          luaText
+          +
+            # Suppress a MoonScript-generated return value (it does this due to being an expression-oriented language)
+            ''
+              return
+            ''
+        );
+      };
+    in
+    langSwitch.${config.configLanguage};
 
   initScript = mkInitScript false plugList;
   # This is used for declaratively generating the remote plugins manifest
   pluginOnlyInitScript = mkInitScript true plugList;
 
   # localNvimFiles: A symlink tree of the configured extra nvim runtime files {{{
-  localNvimFiles = flip pkgs.callPackage {
-    # NOTE: Not sure why I have to manually specify this, despite feeding it
-    # into `nativeBuildInputs` I don't get the correct package variant spliced
-    # in without being explicit.
-    lua = pkgs.pkgsBuildHost.luajit;
-  } (
-    { runCommand, writeText
-    , lua
-    }:
-    let
-      filesJson = let
-        fileList = mapAttrsToList (addPath) (filterAttrs (n: v: v.enable) config.files);
-        # addPath :: String -> NvimFile -> { source :: String, target :: String }
-        addPath = name: file: {
-          inherit (file) source target;
-        };
-      in writeText "local-nvim-files.json" (builtins.toJSON fileList);
+  localNvimFiles =
+    flip pkgs.callPackage
+      {
+        # NOTE: Not sure why I have to manually specify this, despite feeding it
+        # into `nativeBuildInputs` I don't get the correct package variant spliced
+        # in without being explicit.
+        lua = pkgs.pkgsBuildHost.luajit;
+      }
+      (
+        {
+          runCommand,
+          writeText,
+          lua,
+        }:
+        let
+          filesJson =
+            let
+              fileList = mapAttrsToList (addPath) (filterAttrs (n: v: v.enable) config.files);
+              # addPath :: String -> NvimFile -> { source :: String, target :: String }
+              addPath = name: file: {
+                inherit (file) source target;
+              };
+            in
+            writeText "local-nvim-files.json" (builtins.toJSON fileList);
 
-      # We already need Lua due to nvim, and the other deps are pretty minimal --
-      # doing this in bash would be less nice, jq isn't that great for working
-      # with collections.
-      luaDeps = ps: with ps; [ inspect luafilesystem rapidjson ];
-      luaBuilder = ./lua/config-nvim-builder.lua;
-    in
-    runCommand "config-nvim" {
-      nativeBuildInputs = [
-        # TODO change this when adding an option to configure the lua package
-        # used for neovim? would just be to save on having duplicate Lua's
-        # installed in this case; this one shouldn't particularly be open to
-        # customisation
-        (lua.withPackages luaDeps)
-      ];
-    } ''
-      lua ${luaBuilder} ${filesJson} $out
-    '');
+          # We already need Lua due to nvim, and the other deps are pretty minimal --
+          # doing this in bash would be less nice, jq isn't that great for working
+          # with collections.
+          luaDeps =
+            ps: with ps; [
+              inspect
+              luafilesystem
+              rapidjson
+            ];
+          luaBuilder = ./lua/config-nvim-builder.lua;
+        in
+        runCommand "config-nvim"
+          {
+            nativeBuildInputs = [
+              # TODO change this when adding an option to configure the lua package
+              # used for neovim? would just be to save on having duplicate Lua's
+              # installed in this case; this one shouldn't particularly be open to
+              # customisation
+              (lua.withPackages luaDeps)
+            ];
+          }
+          ''
+            lua ${luaBuilder} ${filesJson} $out
+          ''
+      );
   # }}}
 
   luaSetup = builtins.readFile ./lua/vimrc-setup.lua;
 
-  luaLoadPlugins = plugList: lazyOk: let
-    luaLoadPluginsSrc = concatStrings luaLoadPluginsLines;
-    luaLoadPluginsLines =
-      (flip map beforePlugList (plugin: conditionalWrapper plugin "${(addBeforeRtp (plugPath plugin))}\n")) ++
-      (flip map afterPlugList (plugin: conditionalWrapper plugin "${(addAfterRtp (plugPath plugin))}\n")) ++
-      (flip map localPlugList (plugin: conditionalWrapper plugin ''
-        if envy.dir_exists(${toLuaString "${plugPath plugin}/after"}) then
-          ${addAfterRtp (plugPath plugin)}
-        end
-      '')) ++
-      optionals lazyOk (flatten (flip map lazyPlugList (plugin:
-        optionals (strListSet plugin.for) (flip map (ensureList plugin.for) (ft: ''
-          table.insert(envy.lazy_filetype_plugins[${toLuaString ft}], ${toLuaString (plugPath plugin)})
-        '')) ++
-        optionals (strListSet plugin.on_cmd) (flip map (ensureList plugin.on_cmd) (cmd: ''
-          table.insert(envy.lazy_command_plugins[${toLuaString cmd}], ${toLuaString (plugPath plugin)})
-        '')) ++
-        optionals (strListSet plugin.on_map) (flip map (ensureList plugin.on_map) (mapping: ''
-          table.insert(envy.lazy_mapped_plugins[${toLuaString mapping}], ${toLuaString (plugPath plugin)})
-        ''))
-      ))) ++ singleton ''
-        envy.set_rtp()
-        envy.setup_lazy_loading()
-      '';
-
-    baseList = if lazyOk
-      then filter (plug: !(isLazyPlugin plug)) plugList
-      else plugList;
-    lazyPlugList = filter (isLazyPlugin) plugList;
-    beforePlugList = baseList;
-    afterPlugList = flip filter baseList
-      (plugin: !isLocal plugin && hasAfterDir plugin.source.outPath);
-    localPlugList = filter (isLocal) baseList;
-
-    conditionalWrapper = plugin: lines: let
-      condExprs = {
-        vimscript = cond: ''
-          if vim.api.nvim_eval(${toLuaString cond}) ~= 0" then
-            ${lines}
-          end
+  luaLoadPlugins =
+    plugList: lazyOk:
+    let
+      luaLoadPluginsSrc = concatStrings luaLoadPluginsLines;
+      luaLoadPluginsLines =
+        (flip map beforePlugList (
+          plugin: conditionalWrapper plugin "${(addBeforeRtp (plugPath plugin))}\n"
+        ))
+        ++ (flip map afterPlugList (
+          plugin: conditionalWrapper plugin "${(addAfterRtp (plugPath plugin))}\n"
+        ))
+        ++ (flip map localPlugList (
+          plugin:
+          conditionalWrapper plugin ''
+            if envy.dir_exists(${toLuaString "${plugPath plugin}/after"}) then
+              ${addAfterRtp (plugPath plugin)}
+            end
+          ''
+        ))
+        ++ optionals lazyOk (
+          flatten (
+            flip map lazyPlugList (
+              plugin:
+              optionals (strListSet plugin.for) (
+                flip map (ensureList plugin.for) (ft: ''
+                  table.insert(envy.lazy_filetype_plugins[${toLuaString ft}], ${toLuaString (plugPath plugin)})
+                '')
+              )
+              ++ optionals (strListSet plugin.on_cmd) (
+                flip map (ensureList plugin.on_cmd) (cmd: ''
+                  table.insert(envy.lazy_command_plugins[${toLuaString cmd}], ${toLuaString (plugPath plugin)})
+                '')
+              )
+              ++ optionals (strListSet plugin.on_map) (
+                flip map (ensureList plugin.on_map) (mapping: ''
+                  table.insert(envy.lazy_mapped_plugins[${toLuaString mapping}], ${toLuaString (plugPath plugin)})
+                '')
+              )
+            )
+          )
+        )
+        ++ singleton ''
+          envy.set_rtp()
+          envy.setup_lazy_loading()
         '';
-        lua = cond: ''
-          local cond_expr = function()
-            ${cond}
-          end
-          if cond_expr() then
-            ${lines}
-          end
-        '';
-        # moonc will generate the 'return' for the below function
-        moonscript = cond: condExprs.lua (compileMoon cond);
-      };
-    in if plugin.condition != null
-      then condExprs.${config.configLanguage} plugin.condition
-      else lines;
-    ensureList = maybeList: if isList maybeList then maybeList else singleton maybeList;
-    plugPath = plugin: if isLocal plugin then plugin.dir else plugin.source.outPath;
-    isLocal = plugin: plugin.pluginType == "local";
-    isLazyPlugin = plugin: strListSet plugin.for || strListSet plugin.on_cmd || strListSet plugin.on_map;
-  in luaLoadPluginsSrc;
 
-  perPluginExtraConfig = let
-    matchingPlugins = filter (plugin: plugin.extraConfig != null) sortedPlugins;
-  in concatMapStringsSep "\n\n" (plugin: plugin.extraConfig) matchingPlugins;
+      baseList = if lazyOk then filter (plug: !(isLazyPlugin plug)) plugList else plugList;
+      lazyPlugList = filter (isLazyPlugin) plugList;
+      beforePlugList = baseList;
+      afterPlugList = flip filter baseList (plugin: !isLocal plugin && hasAfterDir plugin.source.outPath);
+      localPlugList = filter (isLocal) baseList;
+
+      conditionalWrapper =
+        plugin: lines:
+        let
+          condExprs = {
+            vimscript = cond: ''
+              if vim.api.nvim_eval(${toLuaString cond}) ~= 0" then
+                ${lines}
+              end
+            '';
+            lua = cond: ''
+              local cond_expr = function()
+                ${cond}
+              end
+              if cond_expr() then
+                ${lines}
+              end
+            '';
+            # moonc will generate the 'return' for the below function
+            moonscript = cond: condExprs.lua (compileMoon cond);
+          };
+        in
+        if plugin.condition != null then condExprs.${config.configLanguage} plugin.condition else lines;
+      ensureList = maybeList: if isList maybeList then maybeList else singleton maybeList;
+      plugPath = plugin: if isLocal plugin then plugin.dir else plugin.source.outPath;
+      isLocal = plugin: plugin.pluginType == "local";
+      isLazyPlugin =
+        plugin: strListSet plugin.for || strListSet plugin.on_cmd || strListSet plugin.on_map;
+    in
+    luaLoadPluginsSrc;
+
+  perPluginExtraConfig =
+    let
+      matchingPlugins = filter (plugin: plugin.extraConfig != null) sortedPlugins;
+    in
+    concatMapStringsSep "\n\n" (plugin: plugin.extraConfig) matchingPlugins;
 
   # mergedBuckets: List of buckets with merged plugin directories (where possible) {{{
-  mergedBuckets = let
-    # mergeBucket :: [Plugin] -> [Either PluginDrv MergedPluginDrv]
-    mergeBucket = bucket: let
-      soloPlugins = filter (p: !isMergeablePlugin p) bucket;
-      # isMergeablePlugin :: PluginDrv -> Bool
-      isMergeablePlugin = plugin: !(
-        # Any of these should prevent a plugin from being merged
-           !plugin.mergeable
-        || strListSet plugin.on_cmd
-        || strListSet plugin.on_map
-        || strListSet plugin.for
-        || plugin.condition != null
-        || plugin.pluginType == "local"
-      );
-      mergeablePlugins = filter (isMergeablePlugin) bucket;
-      # Theoretically, could merge plugins in the same bucket with the same
-      # "for", but probably not worthwhile
-      mergedPlugin = let
-        drv = pkgs.symlinkJoin {
-          name = "merged-vim-plugins";
-          paths = map (plugin: plugin.source.outPath) mergeablePlugins;
-          nativeBuildInputs = [
-            config.neovimPackage
-          ];
-          postBuild = ''
-            # Rebuild help tag index
-            if [ -d "$out/doc" ]; then
-              if [ -e "$out/doc/tags" ]; then
-                echo "Removing linked help tags"
-                rm -f "$out/doc/tags"
-              fi
-              echo "Building help tags for merged plugins"
-              if ! nvim -N -u NONE -i NONE -n -E -s -V1 -c "helptags $out/doc" +quit!; then
-                echo "Failed to build help tags!"
-                exit 1
-              fi
+  mergedBuckets =
+    let
+      # mergeBucket :: [Plugin] -> [Either PluginDrv MergedPluginDrv]
+      mergeBucket =
+        bucket:
+        let
+          soloPlugins = filter (p: !isMergeablePlugin p) bucket;
+          # isMergeablePlugin :: PluginDrv -> Bool
+          isMergeablePlugin =
+            plugin:
+            !(
+              # Any of these should prevent a plugin from being merged
+              !plugin.mergeable
+              || strListSet plugin.on_cmd
+              || strListSet plugin.on_map
+              || strListSet plugin.for
+              || plugin.condition != null
+              || plugin.pluginType == "local"
+            );
+          mergeablePlugins = filter (isMergeablePlugin) bucket;
+          # Theoretically, could merge plugins in the same bucket with the same
+          # "for", but probably not worthwhile
+          mergedPlugin =
+            let
+              drv = pkgs.symlinkJoin {
+                name = "merged-vim-plugins";
+                paths = map (plugin: plugin.source.outPath) mergeablePlugins;
+                nativeBuildInputs = [
+                  config.neovimPackage
+                ];
+                postBuild = ''
+                  # Rebuild help tag index
+                  if [ -d "$out/doc" ]; then
+                    if [ -e "$out/doc/tags" ]; then
+                      echo "Removing linked help tags"
+                      rm -f "$out/doc/tags"
+                    fi
+                    echo "Building help tags for merged plugins"
+                    if ! nvim -N -u NONE -i NONE -n -E -s -V1 -c "helptags $out/doc" +quit!; then
+                      echo "Failed to build help tags!"
+                      exit 1
+                    fi
+                  else
+                    echo "No docs available"
+                  fi
+                '';
+              };
+            in
+            {
+              source = drv;
+              pluginType = "path";
+              condition = null;
+              on_cmd = [ ];
+              on_map = [ ];
+              for = [ ];
+            };
+          mergedList =
+            if length mergeablePlugins > 1 then
+              [ mergedPlugin ]
+            else if length mergeablePlugins == 0 then
+              [ ]
             else
-              echo "No docs available"
-            fi
-          '';
-        };
-      in {
-        source = drv;
-        pluginType = "path";
-        condition = null; on_cmd = []; on_map = []; for = [];
-      };
-      mergedList =
-        if length mergeablePlugins > 1
-          then [ mergedPlugin ]
-          else if length mergeablePlugins == 0 then []
-        else mergeablePlugins;
-    in soloPlugins ++ mergedList;
-  in map (mergeBucket) rawPluginBuckets;
+              mergeablePlugins;
+        in
+        soloPlugins ++ mergedList;
+    in
+    map (mergeBucket) rawPluginBuckets;
   # }}}
 
   # rawPluginBuckets: List of required plugin "buckets"... {{{
@@ -231,62 +341,79 @@ let
   # order, and optionally also to generate "merged" plugins (where possible) in
   # order to minimize the number of directories added to nvim's runtimepath.
   rawPluginBuckets = map (bucket: map (path: registryByPath.${path}) bucket) rawStringPluginBuckets;
-  rawStringPluginBuckets = let
-    # addToBuckets :: [String] -> [[PluginDrv]] -> [String] -> [[PluginDrv]]
-    addToBuckets = done: buckets: rem: let
-      buckets' = buckets ++ [ currentBucket ];
-      # List of plugins whose dependencies (soft and hard) are satisfied by the
-      # plugins already done
-      currentBucket = filter (p: isSatisfied p) rem;
-      isSatisfied = path: let
-        # Set of plugins that this plugin must be ordered after, and that are
-        # part of the plugin dependency closure of this neovim config
-        after = filter (n: elem n requiredPlugins) depIndex.${path}.after;
-      in all (dep: elem dep done) after;
+  rawStringPluginBuckets =
+    let
+      # addToBuckets :: [String] -> [[PluginDrv]] -> [String] -> [[PluginDrv]]
+      addToBuckets =
+        done: buckets: rem:
+        let
+          buckets' = buckets ++ [ currentBucket ];
+          # List of plugins whose dependencies (soft and hard) are satisfied by the
+          # plugins already done
+          currentBucket = filter (p: isSatisfied p) rem;
+          isSatisfied =
+            path:
+            let
+              # Set of plugins that this plugin must be ordered after, and that are
+              # part of the plugin dependency closure of this neovim config
+              after = filter (n: elem n requiredPlugins) depIndex.${path}.after;
+            in
+            all (dep: elem dep done) after;
 
-      rem' = filter (p: ! isSatisfied p) rem;
-      done' = done ++ currentBucket;
-    in if length rem' > 0
-      then addToBuckets done' buckets' rem'
-      else buckets';
-  in addToBuckets [] [] requiredPlugins;
+          rem' = filter (p: !isSatisfied p) rem;
+          done' = done ++ currentBucket;
+        in
+        if length rem' > 0 then addToBuckets done' buckets' rem' else buckets';
+    in
+    addToBuckets [ ] [ ] requiredPlugins;
   # }}}
 
   # depIndex: Maps plugin paths to the plugins that should be loaded before/after them {{{
-  depIndex = let
-    fullIndex = foldl' (addDepInfo) {} (mapAttrsToList (nameValuePair) registryByPath);
-    # addDepInfo :: { Plugin } -> {name :: String, value :: Plugin } ->
-    #   { Plugin }
-    addDepInfo = index: {name, value}: let
-      spec = value;
-
-      updatedIndex = foldl' (addUpdate) index updates;
-
-      # addUpdate :: { Plugin } ->
-      #   {name :: String, value :: { Before = [String]; After = [String] } ->
+  depIndex =
+    let
+      fullIndex = foldl' (addDepInfo) { } (mapAttrsToList (nameValuePair) registryByPath);
+      # addDepInfo :: { Plugin } -> {name :: String, value :: Plugin } ->
       #   { Plugin }
-      addUpdate = index: {name, value}: let
-        existing = index.${name} or {};
-      in index // {
-        ${name} = {
-          after = existing.after or [] ++ value.after or [];
-          before = existing.before or [] ++ value.before or [];
-        };
-      };
+      addDepInfo =
+        index:
+        { name, value }:
+        let
+          spec = value;
 
-      updates = beforeUpdates ++ afterUpdates;
+          updatedIndex = foldl' (addUpdate) index updates;
 
-      beforeUpdates =
-        map (plugName: nameValuePair plugName { before = [ name ]; }) (deps ++ spec.after or [])
-        ++ singleton (nameValuePair name { before = spec.before or []; });
+          # addUpdate :: { Plugin } ->
+          #   {name :: String, value :: { Before = [String]; After = [String] } ->
+          #   { Plugin }
+          addUpdate =
+            index:
+            { name, value }:
+            let
+              existing = index.${name} or { };
+            in
+            index
+            // {
+              ${name} = {
+                after = existing.after or [ ] ++ value.after or [ ];
+                before = existing.before or [ ] ++ value.before or [ ];
+              };
+            };
 
-      afterUpdates =
-        (map (plugName: nameValuePair plugName { after = [ name ]; }) (spec.before or []))
-        ++ singleton (nameValuePair name { after = spec.after or [] ++ deps;});
+          updates = beforeUpdates ++ afterUpdates;
 
-      deps = spec.dependencies or [];
-    in updatedIndex;
-  in fullIndex;
+          beforeUpdates =
+            map (plugName: nameValuePair plugName { before = [ name ]; }) (deps ++ spec.after or [ ])
+            ++ singleton (nameValuePair name { before = spec.before or [ ]; });
+
+          afterUpdates =
+            (map (plugName: nameValuePair plugName { after = [ name ]; }) (spec.before or [ ]))
+            ++ singleton (nameValuePair name { after = spec.after or [ ] ++ deps; });
+
+          deps = spec.dependencies or [ ];
+        in
+        updatedIndex;
+    in
+    fullIndex;
   # }}}
 
   plugList = if config.mergePlugins then flatten mergedBuckets else sortedPlugins;
@@ -296,124 +423,190 @@ let
   # }}}
 
   # requiredPlugins: Dependency closure of raw plugins that need to be installed
-  requiredPlugins = let
-    getDeps = pluginPath: let
-      directDeps = registryByPath.${pluginPath}.dependencies;
-    in [ pluginPath ] ++ concatLists (map getDeps directDeps);
-  in unique (concatLists (map getDeps (enabledPlugins)));
+  requiredPlugins =
+    let
+      getDeps =
+        pluginPath:
+        let
+          directDeps = registryByPath.${pluginPath}.dependencies;
+        in
+        [ pluginPath ] ++ concatLists (map getDeps directDeps);
+    in
+    unique (concatLists (map getDeps (enabledPlugins)));
 
   # Directly enabled plugins, not including dependencies
   enabledPlugins = attrNames (filterAttrs (n: v: v.enable) registryByPath);
 
-  registryByPath = let
-    # Map output paths to plugin-specs, including dependencies, generating new
-    # ones for derivation dependencies that aren't already in the registry
-    registry = foldl' (registry: spec: let
-      # Only 'local' plugins won't have an outPath, at this point
-      path = pathFromSpec spec;
+  registryByPath =
+    let
+      # Map output paths to plugin-specs, including dependencies, generating new
+      # ones for derivation dependencies that aren't already in the registry
+      registry = foldl' (
+        registry: spec:
+        let
+          # Only 'local' plugins won't have an outPath, at this point
+          path = pathFromSpec spec;
 
-      registryWithDeps = if spec ? source
-        then let
-          registryWithDrvDeps = registerDeps registry spec.source;
-        in foldl' (registry': drv: registerDep registry' drv) registryWithDrvDeps (filter isDerivation spec.dependencies)
-        else registry;
+          registryWithDeps =
+            if spec ? source then
+              let
+                registryWithDrvDeps = registerDeps registry spec.source;
+              in
+              foldl' (registry': drv: registerDep registry' drv) registryWithDrvDeps (
+                filter isDerivation spec.dependencies
+              )
+            else
+              registry;
 
-      registerDeps = registry: drv: let
-        deps = drv.dependencies or [];
-      in foldl' (registerDep) registry deps;
+          registerDeps =
+            registry: drv:
+            let
+              deps = drv.dependencies or [ ];
+            in
+            foldl' (registerDep) registry deps;
 
-      registerDep = registry': dep: recursiveUpdate {
-        ${unsafeDiscardStringContext dep.outPath} = wrapUpstreamPluginDrv dep true;
-      } (registerDeps registry' dep);
+          registerDep =
+            registry': dep:
+            recursiveUpdate {
+              ${unsafeDiscardStringContext dep.outPath} = wrapUpstreamPluginDrv dep true;
+            } (registerDeps registry' dep);
 
-    in registryWithDeps // {
-      ${path} = spec;
-    }) {} (attrValues drvRegistry);
+        in
+        registryWithDeps
+        // {
+          ${path} = spec;
+        }
+      ) { } (attrValues drvRegistry);
 
-    # Ensure all dependency and ordering references are by derivation, not by name
-    registry' = mapAttrs (path: spec: spec // {
-      dependencies = (mapDepsToPaths spec.dependencies) ++ getDrvDeps spec;
-      after = mapDepsToPaths (spec.after or []);
-      before = mapDepsToPaths (spec.before or []);
-    }) registry;
+      # Ensure all dependency and ordering references are by derivation, not by name
+      registry' = mapAttrs (
+        path: spec:
+        spec
+        // {
+          dependencies = (mapDepsToPaths spec.dependencies) ++ getDrvDeps spec;
+          after = mapDepsToPaths (spec.after or [ ]);
+          before = mapDepsToPaths (spec.before or [ ]);
+        }
+      ) registry;
 
-    mapDepsToPaths = deps: map depToPath deps;
-    depToPath = dep:
-      if builtins.isString dep then
-        if hasAttr dep drvRegistry
-        then pathFromSpec drvRegistry.${dep}
-        else throw "Dependency `${dep}` does not exist in `sn.programs.neovim.pluginRegistry`"
-      else unsafeDiscardStringContext dep.outPath;
-    pathFromSpec = spec:
-      if spec.pluginType == "local" then spec.dir
-      else if spec.pluginType == "path" then unsafeDiscardStringContext spec.source
-      else unsafeDiscardStringContext spec.source.outPath;
-  in registry';
+      mapDepsToPaths = deps: map depToPath deps;
+      depToPath =
+        dep:
+        if builtins.isString dep then
+          if hasAttr dep drvRegistry then
+            pathFromSpec drvRegistry.${dep}
+          else
+            throw "Dependency `${dep}` does not exist in `sn.programs.neovim.pluginRegistry`"
+        else
+          unsafeDiscardStringContext dep.outPath;
+      pathFromSpec =
+        spec:
+        if spec.pluginType == "local" then
+          spec.dir
+        else if spec.pluginType == "path" then
+          unsafeDiscardStringContext spec.source
+        else
+          unsafeDiscardStringContext spec.source.outPath;
+    in
+    registry';
 
-  getDrvDeps = spec: let
-    deps = if spec ? source && isDerivation spec.source
-      then spec.source.dependencies or []
-      else [];
-  in map (d: unsafeDiscardStringContext d.outPath) deps;
+  getDrvDeps =
+    spec:
+    let
+      deps = if spec ? source && isDerivation spec.source then spec.source.dependencies or [ ] else [ ];
+    in
+    map (d: unsafeDiscardStringContext d.outPath) deps;
 
   # drvRegistry: pluginRegistry where all non-local plugins are ensured to have proper drv sources {{{
-  drvRegistry = let
-    composePlugin = pluginName: plugin: plugin // {
-      source = if plugin.pluginType == "path"
-      then if plugin.source != null
-        then buildPluginFromPath pluginName plugin
-        else throw "Neither `source` nor `dir` specified for `sn.programs.neovim.pluginRegistry.${pluginName}`"
-      else plugin.source;
-    };
-  in mapAttrs (composePlugin) taggedPluginRegistry;
+  drvRegistry =
+    let
+      composePlugin =
+        pluginName: plugin:
+        plugin
+        // {
+          source =
+            if plugin.pluginType == "path" then
+              if plugin.source != null then
+                buildPluginFromPath pluginName plugin
+              else
+                throw "Neither `source` nor `dir` specified for `sn.programs.neovim.pluginRegistry.${pluginName}`"
+            else
+              plugin.source;
+        };
+    in
+    mapAttrs (composePlugin) taggedPluginRegistry;
   # }}}
 
   # taggedPluginRegistry: pluginRegistry with source-type tagging {{{
-  taggedPluginRegistry = let
-    # amendPluginRegistration :: String -> Plugin -> TaggedPlugin
-    amendPluginRegistration = name: plugin:
-      if plugin.dir != null
-        then  plugin // { pluginType = "local"; }
+  taggedPluginRegistry =
+    let
+      # amendPluginRegistration :: String -> Plugin -> TaggedPlugin
+      amendPluginRegistration =
+        name: plugin:
+        if plugin.dir != null then
+          plugin // { pluginType = "local"; }
 
-      else if plugin ? source && isDerivation plugin.source
-        then  plugin // { pluginType = "upstream"; }
+        else if plugin ? source && isDerivation plugin.source then
+          plugin // { pluginType = "upstream"; }
 
-      else    plugin // { pluginType = "path"; };
-  in mapAttrs (amendPluginRegistration) config.pluginRegistry;
+        else
+          plugin // { pluginType = "path"; };
+    in
+    mapAttrs (amendPluginRegistration) config.pluginRegistry;
   # }}}
 
   # Helpers {{{
   # TODO: Is there anything else we can automatically infer?
   # wrapUpstreamPluginDrv :: String -> Derivation -> Plugin
-  wrapUpstreamPluginDrv = pluginDrv: includeEnable: {
-    source = pluginDrv;
-    remote = {}
-      # NOTE python3 is behind optionalAttrs as we don't want the user to have
-      # to mkForce in order to fix a false-negative
-      // optionalAttrs (pluginDrv ? python3Dependencies) {
-        python3 = true;
-        python3Deps = pluginDrv.python3Dependencies;
-      };
-    dependencies = []; # Will be populated later
-    binDeps = pluginDrv.propagatedBuildInputs or [];
-    mergeable = true;
-    condition = null; on_cmd = []; on_map = []; for = [];
-    extraConfig = null;
-    pluginType = "upstream";
-  } // optionalAttrs includeEnable { enable = false; };
+  wrapUpstreamPluginDrv =
+    pluginDrv: includeEnable:
+    {
+      source = pluginDrv;
+      remote =
+        { }
+        # NOTE python3 is behind optionalAttrs as we don't want the user to have
+        # to mkForce in order to fix a false-negative
+        // optionalAttrs (pluginDrv ? python3Dependencies) {
+          python3 = true;
+          python3Deps = pluginDrv.python3Dependencies;
+        };
+      dependencies = [ ]; # Will be populated later
+      binDeps = pluginDrv.propagatedBuildInputs or [ ];
+      mergeable = true;
+      condition = null;
+      on_cmd = [ ];
+      on_map = [ ];
+      for = [ ];
+      extraConfig = null;
+      pluginType = "upstream";
+    }
+    // optionalAttrs includeEnable { enable = false; };
 
   # buildPluginFromPath :: String -> Plugin -> PluginDrv
-  buildPluginFromPath = pluginName: spec: let
-    pname = pluginName;
-    version = "frompath";
-    src = spec.source;
-  in pkgs.vimUtils.buildVimPlugin (rec {
-    inherit pname version src;
-    name = "${pname}-${version}";
-  });
+  buildPluginFromPath =
+    pluginName: spec:
+    let
+      pname = pluginName;
+      version = "frompath";
+      src = spec.source;
+    in
+    pkgs.vimUtils.buildVimPlugin (rec {
+      inherit pname version src;
+      name = "${pname}-${version}";
+    });
 
   # sourceFromPin :: {SourcePin} -> StorePath
-  sourceFromPin = pin: pkgs.fetchgit { inherit (pin) url rev sha256 leaveDotGit fetchSubmodules; };
+  sourceFromPin =
+    pin:
+    pkgs.fetchgit {
+      inherit (pin)
+        url
+        rev
+        sha256
+        leaveDotGit
+        fetchSubmodules
+        ;
+    };
 
   # getRemoteDeps :: String -> Any (Bool ExtraPython3Package ExtraPython3Package)
   getRemoteDeps = attrname: map (plugin: plugin.remote.${attrname});
@@ -421,54 +614,73 @@ let
   plugDepAsString = dep: if isString dep then dep else dep.pname or dep.name;
   # buildPythonEnv :: String -> { Derivation } ->
   #   Either ExtraPython3Package ExtraPython3Package -> Derivation
-  buildPythonEnv = vimDepName: pyPackages: extraPackages: let
-    pluginPythonPackages = getRemoteDeps vimDepName (filter (plugin: hasAttr vimDepName plugin.remote) sortedPlugins);
-  in pyPackages.python.withPackages (ps:
-      [ ps.pynvim ]
-      ++ (extraPackages ps)
-      ++ (concatMap (f: f ps) pluginPythonPackages)
+  buildPythonEnv =
+    vimDepName: pyPackages: extraPackages:
+    let
+      pluginPythonPackages = getRemoteDeps vimDepName (
+        filter (plugin: hasAttr vimDepName plugin.remote) sortedPlugins
+      );
+    in
+    pyPackages.python.withPackages (
+      ps: [ ps.pynvim ] ++ (extraPackages ps) ++ (concatMap (f: f ps) pluginPythonPackages)
     );
 
   # requiresRemoteHost :: String -> Bool
-  requiresRemoteHost = remoteHost: any (plugin: let
-    in plugin.remote.${remoteHost} or false == true) sortedPlugins;
+  requiresRemoteHost =
+    remoteHost:
+    any (
+      plugin:
+      let
+      in
+      plugin.remote.${remoteHost} or false == true
+    ) sortedPlugins;
 
   # mkLangPackagesOption :: String -> a -> String -> Option
-  mkLangPackagesOption = lang: langPackageType: examplePackages: mkOption {
-    description = ''
-      A function that takes an attribute set of ${lang} packages (typically
-      passed from nixpkgs) and returns a list of ${lang} packages that this
-      plugin depends on.
-    '';
-    type = langPackageType;
-    default = (_: []);
-    defaultText = "packageSet: []";
-    example = literalExpression "(packageSet: with packageSet: [ ${examplePackages} ])";
-  };
+  mkLangPackagesOption =
+    lang: langPackageType: examplePackages:
+    mkOption {
+      description = ''
+        A function that takes an attribute set of ${lang} packages (typically
+        passed from nixpkgs) and returns a list of ${lang} packages that this
+        plugin depends on.
+      '';
+      type = langPackageType;
+      default = (_: [ ]);
+      defaultText = "packageSet: []";
+      example = literalExpression "(packageSet: with packageSet: [ ${examplePackages} ])";
+    };
 
   # mkRemoteHostOption :: String -> Option
-  mkRemoteHostOption = lang: mkOption {
-    description = ''
-      Whether or not this plugin requires the remote plugin host for ${lang}.
+  mkRemoteHostOption =
+    lang:
+    mkOption {
+      description = ''
+        Whether or not this plugin requires the remote plugin host for ${lang}.
 
-      Will effectively be set to true if any ${lang} package dependencies are
-      specified for this plugin.
-    '';
-    type = with types; bool;
-    default = false;
-  };
+        Will effectively be set to true if any ${lang} package dependencies are
+        specified for this plugin.
+      '';
+      type = with types; bool;
+      default = false;
+    };
 
-  compileMoon = let
-    moonFile = moontext: pkgs.runCommand "compiled.lua" {
-      preferLocalBuild = true;
-      src = pkgs.writeText "src.moon" moontext;
-      nativeBuildInputs = [
-        pkgs.luajitPackages.moonscript
-      ];
-    } ''
-      moonc -o $out $src
-    '';
-  in t: builtins.readFile (moonFile t);
+  compileMoon =
+    let
+      moonFile =
+        moontext:
+        pkgs.runCommand "compiled.lua"
+          {
+            preferLocalBuild = true;
+            src = pkgs.writeText "src.moon" moontext;
+            nativeBuildInputs = [
+              pkgs.luajitPackages.moonscript
+            ];
+          }
+          ''
+            moonc -o $out $src
+          '';
+    in
+    t: builtins.readFile (moonFile t);
 
   # strListSet :: Either String [String] -> Bool
   strListSet = strList: if isList strList then length strList > 0 else true;
@@ -477,31 +689,35 @@ let
 
   escapePlugPath = path: escape [ "," "\\" ] path;
 
-  hasAfterDir = path: let
-    dirSet = builtins.readDir path;
-  in (dirSet ? "after" && dirSet.after == "directory");
+  hasAfterDir =
+    path:
+    let
+      dirSet = builtins.readDir path;
+    in
+    (dirSet ? "after" && dirSet.after == "directory");
 
-  addBeforeRtp = path: "envy.before_rtp = envy.before_rtp .. ${toLuaString ",${escapePlugPath (path)}"}";
-  addAfterRtp = path: "envy.after_rtp = ${toLuaString ",${escapePlugPath (path)}/after"} .. envy.after_rtp";
+  addBeforeRtp =
+    path: "envy.before_rtp = envy.before_rtp .. ${toLuaString ",${escapePlugPath (path)}"}";
+  addAfterRtp =
+    path: "envy.after_rtp = ${toLuaString ",${escapePlugPath (path)}/after"} .. envy.after_rtp";
   # }}}
 
   # Types / submodules {{{
-  mkLangPackagesType = langName: pkgCond: mkOptionType {
-    name = "extra-${langName}-packages";
-    description = "${langName} packages in `${langName}.withPackages` format";
-    check = with types; val: isFunction val && pkgCond val;
-    merge = langPackagesMergeFunc;
-  };
-  extraPython3PackageType = mkLangPackagesType
-    "python3"
-    (val: isList (val pkgs.python3Packages));
-  extraLuaPackageType = mkLangPackagesType
-    "lua"
-    (val: true);
+  mkLangPackagesType =
+    langName: pkgCond:
+    mkOptionType {
+      name = "extra-${langName}-packages";
+      description = "${langName} packages in `${langName}.withPackages` format";
+      check = with types; val: isFunction val && pkgCond val;
+      merge = langPackagesMergeFunc;
+    };
+  extraPython3PackageType = mkLangPackagesType "python3" (val: isList (val pkgs.python3Packages));
+  extraLuaPackageType = mkLangPackagesType "lua" (val: true);
   # langPackagesMergeFunc :: Any -> [({Derivation} -> [Derivation])] ->
   #   ({Derivation} -> [Derivation])
-  langPackagesMergeFunc = loc: defs:
-    packageSet: foldr (a: b: a ++ b) [] (map (f: f packageSet) (getValues defs));
+  langPackagesMergeFunc =
+    loc: defs: packageSet:
+    foldr (a: b: a ++ b) [ ] (map (f: f packageSet) (getValues defs));
 
   nvimFile = { name, config, ... }: {
     options = {
@@ -545,8 +761,10 @@ let
     config = {
       target = mkDefault name;
       source = mkIf (config.text != null) (
-        let name' = "config-nvim-${replaceStrings [ " " ] [ "_" ] (baseNameOf name)}";
-        in mkDefault (pkgs.writeText name' config.text)
+        let
+          name' = "config-nvim-${replaceStrings [ " " ] [ "_" ] (baseNameOf name)}";
+        in
+        mkDefault (pkgs.writeText name' config.text)
       );
     };
   };
@@ -568,7 +786,7 @@ let
         corresponding to `pluginRegistry` attributes.
       '';
       type = with types; listOf (either str package);
-      default = [];
+      default = [ ];
     };
     before = mkOption {
       description = ''
@@ -581,7 +799,7 @@ let
         corresponding to `pluginRegistry` attributes.
       '';
       type = with types; listOf str;
-      default = [];
+      default = [ ];
     };
     after = mkOption {
       description = ''
@@ -594,7 +812,7 @@ let
         corresponding to `pluginRegistry` attributes.
       '';
       type = with types; listOf str;
-      default = [];
+      default = [ ];
     };
     binDeps = mkOption {
       description = ''
@@ -602,10 +820,10 @@ let
         in the `$PATH` of the neovim process for this plugin to use.
       '';
       type = with types; listOf package;
-      default = [];
+      default = [ ];
     };
     luaDeps = mkLangPackagesOption "Lua" extraLuaPackageType "luafilesystem";
-    remote =  {
+    remote = {
       python3 = mkRemoteHostOption "Python 3";
       python3Deps = mkLangPackagesOption "Python 3" extraPython3PackageType "python-language-server";
     };
@@ -693,7 +911,7 @@ let
       '';
       # TODO type-check, must start with uppercase
       type = with types; either str (listOf str);
-      default = [];
+      default = [ ];
     };
     on_map = mkOption {
       description = ''
@@ -707,7 +925,7 @@ let
       '';
       # TODO type-check, must start <Plug>? or elide <Plug>?
       type = with types; either str (listOf str);
-      default = [];
+      default = [ ];
     };
     for = mkOption {
       description = ''
@@ -720,7 +938,7 @@ let
         any additional, non-Envy plugin manager.
       '';
       type = with types; either str (listOf str);
-      default = [];
+      default = [ ];
     };
   };
   # }}}
@@ -751,7 +969,7 @@ in
       description = ''
         An attribute set describing the available/known neovim plugins.
       '';
-      default = {};
+      default = { };
       # TODO: Load this from a CI-tested example file?
       example = literalExpression ''
         (let
@@ -828,7 +1046,13 @@ in
     # TODO, X->Lua compiler options
     # TODO, validity check on the produced vimscript/lua file
     configLanguage = mkOption {
-      type = with types; enum [ "vimscript" "lua" "moonscript" ];
+      type =
+        with types;
+        enum [
+          "vimscript"
+          "lua"
+          "moonscript"
+        ];
       default = "vimscript";
       description = ''
         The language you wish to use for user-supplied configuration line
@@ -867,7 +1091,7 @@ in
     # pointless.
     files = mkOption {
       type = with types; attrsOf (submodule nvimFile);
-      default = {};
+      default = { };
       description = ''
         Files and folders to link into a folder in the runtimepath; outside of
         Envy these would typically be locally-managed files in the
@@ -903,7 +1127,7 @@ in
     };
     extraPython3Packages = mkOption {
       type = extraPython3PackageType;
-      default = (_: []);
+      default = (_: [ ]);
       defaultText = "ps: []";
       example = literalExpression "(ps: with ps; [ python-language-server ])";
       description = ''
@@ -919,7 +1143,7 @@ in
     # Generic package options
     extraBinPackages = mkOption {
       type = with types; listOf package;
-      default = [];
+      default = [ ];
       description = ''
         A list of derivations containing executables that need to be available
         in the `$PATH` of the neovim process for this plugin to use.
@@ -998,7 +1222,7 @@ in
     };
     binDeps = mkOption {
       type = with types; listOf package;
-      default = [];
+      default = [ ];
       internal = true;
       visible = false;
       description = ''
@@ -1042,59 +1266,82 @@ in
     pluginOnlyRC = pkgs.writeText "plugin-only-init.lua" pluginOnlyInitScript;
     depIndexJson = pkgs.writeText "nvim-dependency-index.json" (builtins.toJSON (depIndex));
     python3Env = buildPythonEnv "python3Deps" pkgs.python3Packages config.extraPython3Packages;
-    luaModules = concatMap (plugin: singleton plugin.luaDeps) (filter (plugin: plugin ? luaDeps) sortedPlugins);
+    luaModules = concatMap (plugin: singleton plugin.luaDeps) (
+      filter (plugin: plugin ? luaDeps) sortedPlugins
+    );
     binDeps = concatMap (plugin: plugin.binDeps) sortedPlugins;
-    wrappedNeovim = let
-      configureNeovim = pkgs.callPackage ./wrapper.nix {
-        neovim-unwrapped = config.neovimPackage;
-      };
-    in configureNeovim config;
+    wrappedNeovim =
+      let
+        configureNeovim = pkgs.callPackage ./wrapper.nix {
+          neovim-unwrapped = config.neovimPackage;
+        };
+      in
+      configureNeovim config;
     generatePluginManifest = any (v: v) (map (requiresRemoteHost) [ "python3" ]);
 
     lib = {
       inherit (nvimLib) buildVimPluginFromNiv;
       inherit buildPluginFromPath compileMoon;
 
-      optionsJSON = let
-        # Based on home-manager's manual/options JSON generation, which is
-        # based on nixpkgs
-        # Customly sort option list for the man page.
-        # TODO add a machine-readable 'Type' representation so I can do
-        # per-option-type markdown more easily
-        optionsList = lib.sort optionLess optionsListDesc;
-        # Custom "less" that pushes up all the things ending in ".enable*"
-        # and ".package*"
-        optionLess = a: b:
-          let
-            ise = lib.hasPrefix "enable";
-            isp = lib.hasPrefix "package";
-            cmp = lib.splitByAndCompare ise lib.compare
-                                       (lib.splitByAndCompare isp lib.compare lib.compare);
-          in lib.compareLists cmp a.loc b.loc < 0;
-        optionsListDesc = lib.flip map (lib.optionAttrSetToDocList options) (opt: opt // {
-            # Clean up declaration sites to not refer to the NixOS source tree.
-            declarations = map stripAnyPrefixes opt.declarations;
-          }
-          // lib.optionalAttrs (opt ? example) { example = substFunction opt.example; }
-          // lib.optionalAttrs (opt ? default) { default = substFunction opt.default; }
-          // lib.optionalAttrs (opt ? type) { type = substFunction opt.type; }
+      optionsJSON =
+        let
+          # Based on home-manager's manual/options JSON generation, which is
+          # based on nixpkgs
+          # Customly sort option list for the man page.
+          # TODO add a machine-readable 'Type' representation so I can do
+          # per-option-type markdown more easily
+          optionsList = lib.sort optionLess optionsListDesc;
+          # Custom "less" that pushes up all the things ending in ".enable*"
+          # and ".package*"
+          optionLess =
+            a: b:
+            let
+              ise = lib.hasPrefix "enable";
+              isp = lib.hasPrefix "package";
+              cmp = lib.splitByAndCompare ise lib.compare (lib.splitByAndCompare isp lib.compare lib.compare);
+            in
+            lib.compareLists cmp a.loc b.loc < 0;
+          optionsListDesc = lib.flip map (lib.optionAttrSetToDocList options) (
+            opt:
+            opt
+            // {
+              # Clean up declaration sites to not refer to the NixOS source tree.
+              declarations = map stripAnyPrefixes opt.declarations;
+            }
+            // lib.optionalAttrs (opt ? example) { example = substFunction opt.example; }
+            // lib.optionalAttrs (opt ? default) { default = substFunction opt.default; }
+            // lib.optionalAttrs (opt ? type) { type = substFunction opt.type; }
           );
-        # We need to strip references to /nix/store/* from options,
-        # or else the build will fail.
-        prefixesToStrip = [ "${toString ./.}/" ];
-        stripAnyPrefixes = lib.flip (lib.fold lib.removePrefix) prefixesToStrip;
-        # Replace functions by the string <function>
-        substFunction = x:
-          if builtins.isAttrs x then lib.mapAttrs (name: substFunction) x
-          else if builtins.isList x then map substFunction x
-          else if lib.isFunction x then "<function>"
-          else x;
-      in unsafeDiscardStringContext (builtins.toJSON (optionsList));
+          # We need to strip references to /nix/store/* from options,
+          # or else the build will fail.
+          prefixesToStrip = [ "${toString ./.}/" ];
+          stripAnyPrefixes = lib.flip (lib.fold lib.removePrefix) prefixesToStrip;
+          # Replace functions by the string <function>
+          substFunction =
+            x:
+            if builtins.isAttrs x then
+              lib.mapAttrs (name: substFunction) x
+            else if builtins.isList x then
+              map substFunction x
+            else if lib.isFunction x then
+              "<function>"
+            else
+              x;
+        in
+        unsafeDiscardStringContext (builtins.toJSON (optionsList));
     };
 
     # Some debuggging outputs
     debug = {
-      inherit localNvimFiles drvRegistry requiredPlugins sortedPlugins registryByPath rawPluginBuckets mergedBuckets;
+      inherit
+        localNvimFiles
+        drvRegistry
+        requiredPlugins
+        sortedPlugins
+        registryByPath
+        rawPluginBuckets
+        mergedBuckets
+        ;
     };
   };
 }

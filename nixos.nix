@@ -1,5 +1,12 @@
-{ enabled ? true }:
-{ config, lib, pkgs, ... }:
+{
+  enabled ? true,
+}:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   inherit (lib) mkIf mkOption types;
   cfg = config.sn.programs.neovim;
@@ -9,7 +16,7 @@ in
   options = {
     sn.programs.neovim = mkOption {
       type = types.submodule vimPkgModule;
-      default = {};
+      default = { };
       description = ''
         Neovim configuration.
       '';

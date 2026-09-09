@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   # Configuration items that should be done prior to any per-plugin configuration
   prePluginConfig = ''
