@@ -293,7 +293,7 @@ let
                 ];
                 postBuild = ''
                   # Rebuild help tag index
-                  if [ -d "$out/doc" ]; then
+                  if compgen -G "$out/doc/**/*.txt"; then
                     if [ -e "$out/doc/tags" ]; then
                       echo "Removing linked help tags"
                       rm -f "$out/doc/tags"
