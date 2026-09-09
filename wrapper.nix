@@ -88,7 +88,7 @@ let
 
         ${makeNvimWrapper baseNvimWrapperArgs}
       ''
-      + optionalString (stdenv.isLinux) ''
+      + optionalString (stdenv.hostPlatform.isLinux) ''
         mkdir -p $out/share/applications/
         substitute ${neovim-unwrapped}/share/applications/nvim.desktop $out/share/applications/nvim.desktop \
           --replace 'Name=Neovim' 'Name=Neovim wrapper'
